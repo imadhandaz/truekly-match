@@ -11,6 +11,7 @@ import GoldPaywall from "./components/GoldPaywall";
 import LikesYouScreen from "./components/LikesYouScreen";
 import FiltersModal from "./components/FiltersModal";
 import VerifyIdentityModal from "./components/VerifyIdentityModal";
+import InstallPrompt from "./components/InstallPrompt";
 import { products as seedProducts } from "./data/products";
 
 const LS_KEY = "truekly:v1";
@@ -296,6 +297,8 @@ export default function Home() {
           }}
         />
       )}
+
+      <InstallPrompt />
     </div>
   );
 }
