@@ -259,11 +259,21 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           <h3 className="text-3xl font-bold drop-shadow">{item.title}</h3>
           <span className="text-lg font-light text-white/80">{item.storage}</span>
         </div>
-        <p className="text-sm text-white/85 mb-3 flex items-center gap-2">
-          <span>📍 {item.location}</span>
-          <span className="text-white/50">·</span>
-          <span>{item.distance}</span>
-        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-sm text-white/85">
+            Por <b className="text-white">{item.owner}</b>
+          </p>
+          {item.verified && (
+            <span
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-[11px] font-black shadow"
+              title="Identidad verificada"
+            >
+              ✓
+            </span>
+          )}
+          <span className="text-white/40 text-xs">·</span>
+          <p className="text-xs text-white/70">{item.distance}</p>
+        </div>
 
         {expanded && (
           <div className="mb-3 animate-fadeIn">

@@ -6,6 +6,7 @@ export const products = [
     category: "Móvil",
     owner: "Lucía",
     age: "28 años",
+    verified: true,
     location: "Madrid · Chamberí",
     distance: "2 km",
     photos: [
@@ -25,6 +26,7 @@ export const products = [
     category: "Consola",
     owner: "Diego",
     age: "24 años",
+    verified: false,
     location: "Madrid · Malasaña",
     distance: "4 km",
     photos: [
@@ -44,6 +46,7 @@ export const products = [
     category: "Movilidad",
     owner: "Sara",
     age: "31 años",
+    verified: true,
     location: "Madrid · Lavapiés",
     distance: "6 km",
     photos: [
@@ -62,6 +65,7 @@ export const products = [
     category: "Portátil",
     owner: "Mario",
     age: "35 años",
+    verified: true,
     location: "Madrid · Moncloa",
     distance: "5 km",
     photos: [
@@ -81,6 +85,7 @@ export const products = [
     category: "Consola",
     owner: "Carla",
     age: "22 años",
+    verified: false,
     location: "Madrid · Salamanca",
     distance: "3 km",
     photos: [
@@ -99,6 +104,7 @@ export const products = [
     category: "Cámara",
     owner: "Nora",
     age: "29 años",
+    verified: true,
     location: "Madrid · Retiro",
     distance: "4 km",
     photos: [

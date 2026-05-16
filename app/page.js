@@ -10,6 +10,7 @@ import ChatList from "./components/ChatList";
 import GoldPaywall from "./components/GoldPaywall";
 import LikesYouScreen from "./components/LikesYouScreen";
 import FiltersModal from "./components/FiltersModal";
+import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import { products as seedProducts } from "./data/products";
 
 const LS_KEY = "truekly:v1";
@@ -28,9 +29,11 @@ export default function Home() {
   const [showGold, setShowGold] = useState(false);
   const [goldReason, setGoldReason] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ cats: [], maxKm: 50 });
+  const [filters, setFilters] = useState({ cats: [], maxKm: 50, verifiedOnly: false });
   const [darkMode, setDarkMode] = useState(false);
   const [swipeCount, setSwipeCount] = useState(0);
+  const [verified, setVerified] = useState(false);
+  const [showVerify, setShowVerify] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -42,8 +45,9 @@ export default function Home() {
         setMyProducts(data.myProducts || []);
         setChats(data.chats || {});
         setSwipeCount(data.swipeCount || 0);
-        setFilters(data.filters || { cats: [], maxKm: 50 });
+        setFilters(data.filters || { cats: [], maxKm: 50, verifiedOnly: false });
         setDarkMode(!!data.darkMode);
+        setVerified(!!data.verified);
       }
     } catch {}
     setLoaded(true);
@@ -58,10 +62,10 @@ export default function Home() {
     try {
       localStorage.setItem(
         LS_KEY,
-        JSON.stringify({ matches, myProducts, chats, swipeCount, filters, darkMode })
+        JSON.stringify({ matches, myProducts, chats, swipeCount, filters, darkMode, verified })
       );
     } catch {}
-  }, [matches, myProducts, chats, swipeCount, filters, darkMode, loaded]);
+  }, [matches, myProducts, chats, swipeCount, filters, darkMode, verified, loaded]);
 
   const handleMatch = (product) => {
     setMatches((m) => (m.some((x) => x.id === product.id) ? m : [...m, product]));
@@ -115,12 +119,13 @@ export default function Home() {
   const filteredProducts = seedProducts.filter((p) => {
     if (filters.cats.length > 0 && !filters.cats.includes(p.category)) return false;
     if (parseKm(p.distance) > filters.maxKm) return false;
+    if (filters.verifiedOnly && !p.verified) return false;
     return true;
   });
 
   const fakeLikesYou = seedProducts.slice(0, 4);
 
-  const filterActive = filters.cats.length > 0 || filters.maxKm < 50;
+  const filterActive = filters.cats.length > 0 || filters.maxKm < 50 || filters.verifiedOnly;
 
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
@@ -238,6 +243,8 @@ export default function Home() {
             onBoost={() => openGold("El Boost es exclusivo de Truekly Gold")}
             darkMode={darkMode}
             onToggleDark={() => setDarkMode((d) => !d)}
+            verified={verified}
+            onVerify={() => setShowVerify(true)}
           />
         )}
       </main>
@@ -276,6 +283,16 @@ export default function Home() {
           onApply={(f) => {
             setFilters(f);
             setShowFilters(false);
+          }}
+        />
+      )}
+
+      {showVerify && (
+        <VerifyIdentityModal
+          onClose={() => setShowVerify(false)}
+          onVerified={() => {
+            setVerified(true);
+            setShowVerify(false);
           }}
         />
       )}

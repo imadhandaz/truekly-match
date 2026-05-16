@@ -45,7 +45,14 @@ export default function ChatScreen({ match, messages, onBack, onSend }) {
           style={{ backgroundImage: `url('${match.photos[0]}')` }}
         />
         <div className="flex-1 min-w-0">
-          <p className="font-bold leading-tight truncate">{match.owner}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-bold leading-tight truncate">{match.owner}</p>
+            {match.verified && (
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-[9px] font-black shrink-0">
+                ✓
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-foreground/60 leading-tight truncate">
             {match.title} · {match.location}
           </p>

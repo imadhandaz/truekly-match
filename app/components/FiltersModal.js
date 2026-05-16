@@ -7,14 +7,16 @@ const ALL_CATEGORIES = ["Móvil", "Consola", "Portátil", "Tablet", "Cámara", "
 export default function FiltersModal({ initial, onClose, onApply }) {
   const [cats, setCats] = useState(initial.cats || []);
   const [maxKm, setMaxKm] = useState(initial.maxKm ?? 10);
+  const [verifiedOnly, setVerifiedOnly] = useState(initial.verifiedOnly || false);
 
   const toggle = (c) =>
     setCats((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]));
 
-  const apply = () => onApply({ cats, maxKm });
+  const apply = () => onApply({ cats, maxKm, verifiedOnly });
   const clear = () => {
     setCats([]);
     setMaxKm(10);
+    setVerifiedOnly(false);
   };
 
   return (
@@ -83,9 +85,43 @@ export default function FiltersModal({ initial, onClose, onApply }) {
               <span>50 km</span>
             </div>
           </div>
+
+          <div>
+            <button
+              onClick={() => setVerifiedOnly((v) => !v)}
+              className={`w-full p-3 rounded-xl border-2 flex items-center justify-between transition ${
+                verifiedOnly
+                  ? "border-brand-green bg-brand-green/10"
+                  : "border-foreground/15 bg-transparent"
+              }`}
+            >
+              <div className="flex items-center gap-3 text-left">
+                <span className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-sm font-black flex items-center justify-center">
+                  ✓
+                </span>
+                <div>
+                  <p className="text-sm font-bold">Solo verificados</p>
+                  <p className="text-[11px] text-foreground/55">
+                    Menos estafas, más confianza
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`w-11 h-6 rounded-full p-0.5 transition ${
+                  verifiedOnly ? "bg-brand-blue" : "bg-foreground/20"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    verifiedOnly ? "translate-x-5" : ""
+                  }`}
+                />
+              </div>
+            </button>
+          </div>
         </div>
 
-        <div className="px-5 pb-6">
+        <div className="px-5 pt-2 pb-6">
           <button
             onClick={apply}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold text-lg shadow-lg hover:scale-[1.01] transition"
