@@ -12,6 +12,9 @@ import LikesYouScreen from "./components/LikesYouScreen";
 import FiltersModal from "./components/FiltersModal";
 import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import InstallPrompt from "./components/InstallPrompt";
+import AuthModal from "./components/AuthModal";
+import DeleteAccountModal from "./components/DeleteAccountModal";
+import { useAuth } from "./context/AuthContext";
 import { products as seedProducts } from "./data/products";
 
 const LS_KEY = "truekly:v1";
@@ -35,7 +38,10 @@ export default function Home() {
   const [swipeCount, setSwipeCount] = useState(0);
   const [verified, setVerified] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const { user, profile, signOut } = useAuth();
 
   useEffect(() => {
     try {
@@ -145,17 +151,31 @@ export default function Home() {
           </div>
         </div>
         <div className="flex gap-2 items-center">
-          <button
-            onClick={() => openGold("Hazte Gold")}
-            className="px-3 py-1.5 rounded-full text-sm font-black bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-md hover:scale-105 transition flex items-center gap-1"
-          >
-            <span>✨</span>
-            <span>Gold</span>
-          </button>
+          {!user && (
+            <button
+              onClick={() => setShowAuth(true)}
+              className="px-3 py-1.5 rounded-full text-sm font-bold bg-foreground text-background shadow-md hover:scale-105 transition"
+            >
+              Entrar
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={() => openGold("Hazte Gold")}
+              className="px-3 py-1.5 rounded-full text-sm font-black bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-md hover:scale-105 transition flex items-center gap-1"
+            >
+              <span>✨</span>
+              <span>Gold</span>
+            </button>
+          )}
           <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>
             ⚙
           </IconButton>
-          <IconButton label="Subir producto" onClick={() => setShowUpload(true)} highlight>
+          <IconButton
+            label="Subir producto"
+            onClick={() => (user ? setShowUpload(true) : setShowAuth(true))}
+            highlight
+          >
             +
           </IconButton>
         </div>
@@ -239,13 +259,18 @@ export default function Home() {
         {activeTab === "profile" && (
           <ProfileScreen
             myProducts={myProducts}
-            onAdd={() => setShowUpload(true)}
+            onAdd={() => (user ? setShowUpload(true) : setShowAuth(true))}
             onDelete={handleDeleteProduct}
             onBoost={() => openGold("El Boost es exclusivo de Truekly Gold")}
             darkMode={darkMode}
             onToggleDark={() => setDarkMode((d) => !d)}
             verified={verified}
             onVerify={() => setShowVerify(true)}
+            user={user}
+            profile={profile}
+            onSignOut={signOut}
+            onSignIn={() => setShowAuth(true)}
+            onDeleteAccount={() => setShowDeleteAccount(true)}
           />
         )}
       </main>
@@ -299,6 +324,27 @@ export default function Home() {
       )}
 
       <InstallPrompt />
+
+      {showAuth && (
+        <AuthModal onClose={() => setShowAuth(false)} />
+      )}
+
+      {showDeleteAccount && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteAccount(false)}
+          onDeleted={() => {
+            setShowDeleteAccount(false);
+            setActiveTab("discover");
+            setMatches([]);
+            setMyProducts([]);
+            setChats({});
+            setVerified(false);
+            try {
+              localStorage.removeItem(LS_KEY);
+            } catch {}
+          }}
+        />
+      )}
     </div>
   );
 }

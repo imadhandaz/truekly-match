@@ -9,13 +9,22 @@ export default function ProfileScreen({
   onToggleDark,
   verified,
   onVerify,
+  user,
+  profile,
+  onSignOut,
+  onSignIn,
+  onDeleteAccount,
 }) {
+  const displayName = profile?.display_name || (user?.email ? user.email.split("@")[0] : "Yo");
+  const initial = displayName.charAt(0).toUpperCase();
+  const subtitle = user?.email || "Madrid · Miembro nuevo";
+
   return (
     <div className="w-full max-w-md">
       <div className="flex items-center gap-4 mb-6">
         <div className="relative">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white text-3xl font-black shadow-xl">
-            Y
+            {initial}
           </div>
           {verified && (
             <span className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-sm font-black flex items-center justify-center shadow-md border-2 border-background">
@@ -23,18 +32,27 @@ export default function ProfileScreen({
             </span>
           )}
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold">Yo</h2>
+            <h2 className="text-xl font-bold truncate">{displayName}</h2>
             {verified && (
-              <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-brand-green to-brand-blue text-white text-[10px] font-black">
+              <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-brand-green to-brand-blue text-white text-[10px] font-black shrink-0">
                 VERIFICADO
               </span>
             )}
           </div>
-          <p className="text-sm text-foreground/60">Madrid · Miembro nuevo</p>
+          <p className="text-sm text-foreground/60 truncate">{subtitle}</p>
         </div>
       </div>
+
+      {!user && (
+        <button
+          onClick={onSignIn}
+          className="w-full mb-6 p-4 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-[1.01] transition"
+        >
+          Inicia sesión o regístrate
+        </button>
+      )}
 
       {!verified && (
         <button
@@ -147,6 +165,23 @@ export default function ProfileScreen({
             honesta son la clave.
           </p>
         </div>
+
+        {user && (
+          <>
+            <button
+              onClick={onSignOut}
+              className="w-full p-3 rounded-2xl text-sm font-bold text-foreground/70 hover:bg-foreground/5 transition"
+            >
+              Cerrar sesión
+            </button>
+            <button
+              onClick={onDeleteAccount}
+              className="w-full p-3 rounded-2xl text-xs font-bold text-red-500/80 hover:bg-red-50 transition"
+            >
+              Eliminar mi cuenta
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
