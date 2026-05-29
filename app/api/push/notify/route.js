@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 // Configurar VAPID solo si las claves están disponibles
 if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
@@ -25,7 +20,7 @@ export async function POST(request) {
     const { userId, title, body, url } = await request.json();
     if (!userId) return NextResponse.json({ error: "Falta userId" }, { status: 400 });
 
-    const { data: subs } = await supabaseAdmin
+    const { data: subs } = await getSupabaseAdmin()
       .from("push_subscriptions")
       .select("subscription, endpoint")
       .eq("user_id", userId);
@@ -45,7 +40,7 @@ export async function POST(request) {
       .map(({ sub }) => sub.endpoint);
 
     if (expired.length) {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("push_subscriptions")
         .delete()
         .in("endpoint", expired);

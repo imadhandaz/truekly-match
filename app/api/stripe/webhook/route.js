@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export async function POST(request) {
   const stripe = getStripe();
@@ -28,7 +23,7 @@ export async function POST(request) {
     const userId = session.metadata?.userId;
 
     if (userId) {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("profiles")
         .update({ gold: true })
         .eq("id", userId);
@@ -38,13 +33,13 @@ export async function POST(request) {
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object;
     // Buscar usuario por customer ID de Stripe
-    const { data: subs } = await supabaseAdmin
+    const { data: subs } = await getSupabaseAdmin()
       .from("profiles")
       .select("id")
       .eq("stripe_customer_id", subscription.customer);
 
     if (subs?.length) {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("profiles")
         .update({ gold: false })
         .eq("stripe_customer_id", subscription.customer);
