@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 
 const AuthContext = createContext({
@@ -14,9 +14,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const supabase = getSupabase();
+  const supabaseRef = useRef(null);
 
   useEffect(() => {
+    const supabase = getSupabase();
+    supabaseRef.current = supabase;
     let cancelled = false;
 
     const loadProfile = async (u) => {
@@ -48,9 +50,10 @@ export function AuthProvider({ children }) {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const signOut = async () => {
+    const supabase = supabaseRef.current || getSupabase();
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);

@@ -11,7 +11,6 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
-  const supabase = getSupabase();
 
   const isSignup = mode === "signup";
 
@@ -20,6 +19,7 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
     setError(null);
     setInfo(null);
     setBusy(true);
+    const supabase = getSupabase();
 
     try {
       if (isSignup) {

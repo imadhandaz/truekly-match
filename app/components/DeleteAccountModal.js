@@ -7,7 +7,6 @@ export default function DeleteAccountModal({ onClose, onDeleted }) {
   const [confirmText, setConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const supabase = getSupabase();
 
   const expected = "ELIMINAR";
   const canDelete = confirmText.trim().toUpperCase() === expected;
@@ -15,6 +14,7 @@ export default function DeleteAccountModal({ onClose, onDeleted }) {
   const handleDelete = async () => {
     setBusy(true);
     setError(null);
+    const supabase = getSupabase();
     try {
       const { error } = await supabase.rpc("delete_my_account");
       if (error) throw error;
