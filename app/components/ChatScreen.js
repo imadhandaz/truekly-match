@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { fetchMessages, sendMessage, subscribeToMessages } from "@/lib/db";
+import { notifyUser } from "@/lib/notifications";
 
 const AUTO_REPLIES = [
   "¡Hola! Sí, todavía está disponible 👋",
@@ -68,10 +69,18 @@ export default function ChatScreen({ match, matchId, userId, onBack, messages: d
 
       try {
         const saved = await sendMessage(matchId, userId, trimmed);
-        // Reemplaza el optimista con el mensaje real
         setDbMessages((prev) =>
           prev.map((m) => (m.id === optimistic.id ? saved : m))
         );
+        // Notificar al otro usuario
+        if (match.ownerId) {
+          notifyUser(
+            match.ownerId,
+            match.owner,
+            trimmed.length > 60 ? trimmed.slice(0, 57) + "..." : trimmed,
+            "/?tab=chats"
+          );
+        }
       } catch (err) {
         console.error(err);
         // Revierte el mensaje optimista en caso de error

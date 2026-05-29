@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import SwipeDeck from "./components/SwipeDeck";
 import BottomNav from "./components/BottomNav";
 import UploadProductForm from "./components/UploadProductForm";
@@ -14,6 +14,7 @@ import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
+import { CardSkeleton, MatchCardSkeleton } from "./components/Skeleton";
 import { useAuth } from "./context/AuthContext";
 import {
   fetchDiscoverProducts,
@@ -21,6 +22,8 @@ import {
   fetchMyMatches,
   softDeleteProduct,
 } from "@/lib/db";
+import { setupPushNotifications } from "@/lib/notifications";
+import { getUserLocation, addDistances } from "@/lib/geo";
 import { products as seedProducts } from "./data/products";
 
 const LS_PREFS = "truekly:prefs:v1";
@@ -38,13 +41,16 @@ export default function Home() {
   const [verified, setVerified] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
-  // ── Datos de Supabase ───────────────────────────────────────────────────
+  // ── Datos Supabase ───────────────────────────────────────────────────────
   const [discoverProducts, setDiscoverProducts] = useState([]);
   const [discoverLoading, setDiscoverLoading] = useState(true);
   const [myProducts, setMyProducts] = useState([]);
   const [matches, setMatches] = useState([]);
 
-  // ── Chats demo (sin auth) ───────────────────────────────────────────────
+  // ── Geolocalización ──────────────────────────────────────────────────────
+  const [userLocation, setUserLocation] = useState(null);
+
+  // ── Demo chats (sin auth) ────────────────────────────────────────────────
   const [demoChats, setDemoChats] = useState({});
 
   // ── UI ──────────────────────────────────────────────────────────────────
@@ -57,8 +63,9 @@ export default function Home() {
   const [showVerify, setShowVerify] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  // ── Carga inicial de preferencias ───────────────────────────────────────
+  // ── Carga preferencias ───────────────────────────────────────────────────
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_PREFS);
@@ -84,7 +91,28 @@ export default function Home() {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  // ── Carga productos del discover ─────────────────────────────────────────
+  // ── Gold success desde Stripe redirect ───────────────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("gold") === "success") {
+      showToast("¡Bienvenido a Gold! ✨ Ya tienes acceso a todas las ventajas.");
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
+
+  // ── Geolocalización silenciosa ────────────────────────────────────────────
+  useEffect(() => {
+    getUserLocation().then(setUserLocation).catch(() => {});
+  }, []);
+
+  // ── Setup push notifications al loguearse ────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    setupPushNotifications(user.id);
+  }, [user?.id]);
+
+  // ── Carga productos discover ─────────────────────────────────────────────
   const loadDiscover = useCallback(() => {
     setDiscoverLoading(true);
     fetchDiscoverProducts(user?.id || null, filters)
@@ -93,28 +121,40 @@ export default function Home() {
       .finally(() => setDiscoverLoading(false));
   }, [user?.id, filters]);
 
-  useEffect(() => {
-    loadDiscover();
-  }, [loadDiscover]);
+  useEffect(() => { loadDiscover(); }, [loadDiscover]);
 
-  // ── Carga productos propios del usuario ──────────────────────────────────
+  // ── Carga productos propios ──────────────────────────────────────────────
   useEffect(() => {
     if (!user) { setMyProducts([]); return; }
     fetchMyProducts(user.id).then(setMyProducts).catch(console.error);
   }, [user?.id]);
 
-  // ── Carga matches del usuario ────────────────────────────────────────────
+  // ── Carga matches ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) { setMatches([]); return; }
     fetchMyMatches(user.id).then(setMatches).catch(console.error);
   }, [user?.id]);
 
+  // ── Distancias reales con geolocalización ────────────────────────────────
+  const productsWithDistance = useMemo(() => {
+    const base = addDistances(discoverProducts, userLocation);
+    if (!userLocation) return base;
+    return base.filter((p) => (p._km ?? 999) <= filters.maxKm);
+  }, [discoverProducts, userLocation, filters.maxKm]);
+
+  // ── Toast helper ─────────────────────────────────────────────────────────
+  const toastTimer = useRef(null);
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  };
+
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleMatch = (product) => {
     setMatches((m) =>
       m.some((x) => x.matchId === product.matchId || x.id === product.id)
-        ? m
-        : [...m, product]
+        ? m : [...m, product]
     );
   };
 
@@ -124,6 +164,7 @@ export default function Home() {
     setMyProducts((p) => [product, ...p]);
     setShowUpload(false);
     setActiveTab("profile");
+    showToast("¡Producto publicado! 🎉");
   };
 
   const handleDeleteProduct = async (id) => {
@@ -133,7 +174,6 @@ export default function Home() {
     }
   };
 
-  // Demo chat (solo para usuarios sin auth)
   const handleDemoSend = (matchId, text) => {
     const myMsg = { mine: true, text, time: nowTime() };
     setDemoChats((c) => {
@@ -150,7 +190,6 @@ export default function Home() {
   };
 
   const openChatFor = (match) => setOpenChat(match);
-
   const openGold = (reason) => { setGoldReason(reason || null); setShowGold(true); };
 
   const handleAccountDeleted = () => {
@@ -169,6 +208,14 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-foreground text-background text-sm font-bold shadow-2xl toast max-w-[90vw] text-center">
+          {toast}
+        </div>
+      )}
+
       <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-blue/30">
@@ -197,13 +244,10 @@ export default function Home() {
               onClick={() => openGold("Hazte Gold")}
               className="px-3 py-1.5 rounded-full text-sm font-black bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-md hover:scale-105 transition flex items-center gap-1"
             >
-              <span>✨</span>
-              <span>Gold</span>
+              <span>✨</span><span>Gold</span>
             </button>
           )}
-          <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>
-            ⚙
-          </IconButton>
+          <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>⚙</IconButton>
           <IconButton
             label="Subir producto"
             onClick={() => (user ? setShowUpload(true) : setShowAuth(true))}
@@ -215,9 +259,10 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
+
         {activeTab === "discover" && (
           <>
-            {prefsLoaded && myProducts.length === 0 && (
+            {prefsLoaded && !discoverLoading && myProducts.length === 0 && (
               <button
                 onClick={() => (user ? setShowUpload(true) : setShowAuth(true))}
                 className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
@@ -232,6 +277,7 @@ export default function Home() {
                 <span className="text-brand-blue-dark text-xl">›</span>
               </button>
             )}
+
             {filterActive && (
               <div className="w-full max-w-sm mb-4 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-between text-xs animate-fadeIn">
                 <span className="font-semibold text-brand-blue-dark">
@@ -239,6 +285,7 @@ export default function Home() {
                     ? `${filters.cats.length} categoría${filters.cats.length > 1 ? "s" : ""}`
                     : "Todas categorías"}{" "}
                   · &lt;{filters.maxKm} km
+                  {userLocation && <span className="text-brand-green-dark"> · 📍 Real</span>}
                 </span>
                 <button
                   onClick={() => setFilters({ cats: [], maxKm: 50, verifiedOnly: false })}
@@ -248,6 +295,7 @@ export default function Home() {
                 </button>
               </div>
             )}
+
             {prefsLoaded && remainingSwipes <= 5 && remainingSwipes > 0 && (
               <button
                 onClick={() => openGold("Te quedan pocos swipes hoy")}
@@ -263,14 +311,16 @@ export default function Home() {
                 <span className="text-orange-500 font-bold">→</span>
               </button>
             )}
+
             {discoverLoading ? (
-              <div className="flex flex-col items-center py-20 text-foreground/50">
-                <div className="w-10 h-10 rounded-full border-4 border-brand-green/30 border-t-brand-green animate-spin mb-4" />
-                <p className="text-sm">Cargando productos...</p>
+              <div className="w-full max-w-sm mx-auto animate-fadeIn">
+                <CardSkeleton />
               </div>
+            ) : productsWithDistance.length === 0 ? (
+              <EmptyDiscover onRefresh={loadDiscover} hasFilters={filterActive} onClearFilters={() => setFilters({ cats: [], maxKm: 50, verifiedOnly: false })} />
             ) : (
               <SwipeDeck
-                items={discoverProducts}
+                items={productsWithDistance}
                 onMatch={handleMatch}
                 onOpenChat={openChatFor}
                 onSwipe={handleSwipe}
@@ -281,18 +331,22 @@ export default function Home() {
             )}
           </>
         )}
+
         {activeTab === "likes" && (
           <LikesYouScreen
             products={fakeLikesYou}
             onUpgrade={() => openGold("Hazte Gold para ver quién te ha dado like")}
           />
         )}
+
         {activeTab === "matches" && (
           <MatchesList matches={matches} onOpen={openChatFor} />
         )}
+
         {activeTab === "chats" && (
           <ChatList chats={demoChats} matches={matches} onOpen={openChatFor} />
         )}
+
         {activeTab === "profile" && (
           <ProfileScreen
             myProducts={myProducts}
@@ -339,7 +393,12 @@ export default function Home() {
       )}
 
       {showGold && (
-        <GoldPaywall onClose={() => setShowGold(false)} reason={goldReason} />
+        <GoldPaywall
+          onClose={() => setShowGold(false)}
+          reason={goldReason}
+          userId={user?.id || null}
+          userEmail={user?.email || null}
+        />
       )}
 
       {showFilters && (
@@ -353,7 +412,7 @@ export default function Home() {
       {showVerify && (
         <VerifyIdentityModal
           onClose={() => setShowVerify(false)}
-          onVerified={() => { setVerified(true); setShowVerify(false); }}
+          onVerified={() => { setVerified(true); setShowVerify(false); showToast("¡Identidad verificada! ✓"); }}
         />
       )}
 
@@ -371,6 +430,8 @@ export default function Home() {
   );
 }
 
+// ── Sub-componentes ──────────────────────────────────────────────────────────
+
 function IconButton({ children, label, onClick, highlight, active }) {
   let cls = "bg-white/70 hover:bg-white backdrop-blur border-foreground/5";
   if (highlight) cls = "bg-gradient-to-br from-brand-green to-brand-blue text-white border-transparent hover:scale-110 shadow-brand-blue/30 shadow-lg";
@@ -386,34 +447,65 @@ function IconButton({ children, label, onClick, highlight, active }) {
   );
 }
 
+function EmptyDiscover({ onRefresh, hasFilters, onClearFilters }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center px-6 py-16 animate-fadeInUp">
+      <div className="text-7xl mb-5">🌿</div>
+      <h2 className="text-2xl font-bold mb-2">
+        {hasFilters ? "Sin resultados con estos filtros" : "¡Has visto todo!"}
+      </h2>
+      <p className="text-foreground/60 text-sm mb-6 max-w-xs">
+        {hasFilters
+          ? "Prueba ampliando el radio de distancia o cambiando las categorías."
+          : "Vuelve más tarde, hay nuevos productos cada día."}
+      </p>
+      {hasFilters ? (
+        <button
+          onClick={onClearFilters}
+          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-105 transition"
+        >
+          Limpiar filtros
+        </button>
+      ) : (
+        <button
+          onClick={onRefresh}
+          className="px-6 py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 font-bold transition"
+        >
+          Actualizar
+        </button>
+      )}
+    </div>
+  );
+}
+
 function MatchesList({ matches, onOpen }) {
   if (matches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center py-20">
+      <div className="flex flex-col items-center justify-center text-center py-20 animate-fadeInUp">
         <div className="text-7xl mb-4 opacity-70">💚</div>
         <h2 className="text-2xl font-bold mb-2">Sin matches todavía</h2>
-        <p className="text-foreground/60 max-w-xs">Sigue descubriendo productos para encontrar trueques</p>
+        <p className="text-foreground/60 max-w-xs text-sm">
+          Da like a los productos que te interesan y espera a que la otra persona haga lo mismo.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md animate-fadeIn">
       <h2 className="text-2xl font-bold mb-5 bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
         Tus matches ({matches.length})
       </h2>
       <div className="grid grid-cols-2 gap-3">
-        {matches.map((m) => (
+        {matches.map((m, i) => (
           <button
             key={m.matchId || m.id}
             onClick={() => onOpen(m)}
-            className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left"
+            className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left animate-fadeIn stagger-${Math.min(i + 1, 4)}`}
           >
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${m.photos[0]}')` }} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
-              💬
-            </div>
+            <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">💬</div>
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
               <p className="font-bold text-sm leading-tight">{m.title}</p>
               <p className="text-[11px] text-white/80">{m.owner}</p>
