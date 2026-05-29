@@ -1,36 +1,20 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { saveProduct } from "@/lib/db";
 
 const CATEGORIES = [
-  "Móvil",
-  "Consola",
-  "Portátil",
-  "Tablet",
-  "Cámara",
-  "Movilidad",
-  "Ropa",
-  "Hogar",
-  "Otro",
+  "Móvil", "Consola", "Portátil", "Tablet",
+  "Cámara", "Movilidad", "Ropa", "Hogar", "Otro",
 ];
 
 const MADRID_NEIGHBORHOODS = [
-  "Centro",
-  "Chamberí",
-  "Salamanca",
-  "Retiro",
-  "Malasaña",
-  "Lavapiés",
-  "Moncloa",
-  "Chamartín",
-  "Tetuán",
-  "Latina",
-  "Carabanchel",
-  "Vallecas",
-  "Hortaleza",
+  "Centro", "Chamberí", "Salamanca", "Retiro", "Malasaña",
+  "Lavapiés", "Moncloa", "Chamartín", "Tetuán", "Latina",
+  "Carabanchel", "Vallecas", "Hortaleza",
 ];
 
-export default function UploadProductForm({ onClose, onSave }) {
+export default function UploadProductForm({ onClose, onSave, userId }) {
   const [title, setTitle] = useState("");
   const [storage, setStorage] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
@@ -38,16 +22,20 @@ export default function UploadProductForm({ onClose, onSave }) {
   const [wants, setWants] = useState("");
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  // Cada foto: { preview: "data:...", file: File }
   const [photos, setPhotos] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const fileRef = useRef(null);
 
   const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
     const remaining = 5 - photos.length;
-    files.slice(0, remaining).forEach((f) => {
+    files.slice(0, remaining).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (ev) => setPhotos((p) => [...p, ev.target.result]);
-      reader.readAsDataURL(f);
+      reader.onload = (ev) =>
+        setPhotos((p) => [...p, { preview: ev.target.result, file }]);
+      reader.readAsDataURL(file);
     });
     e.target.value = "";
   };
@@ -56,29 +44,46 @@ export default function UploadProductForm({ onClose, onSave }) {
 
   const isValid = title.trim() && wants.trim() && photos.length > 0;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!isValid) return;
-    const product = {
-      id: Date.now(),
-      title: title.trim(),
-      storage: storage.trim(),
-      category,
-      owner: "Tú",
-      age: "",
-      location: `Madrid · ${neighborhood}`,
-      distance: "0 km",
-      photos,
-      wants: wants.trim(),
-      description: description.trim(),
-      tags: tagsInput
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      isMine: true,
-      createdAt: Date.now(),
-    };
-    onSave(product);
+    if (!isValid || saving) return;
+    setError(null);
+    setSaving(true);
+
+    try {
+      const form = {
+        title: title.trim(),
+        storage: storage.trim(),
+        category,
+        neighborhood,
+        wants: wants.trim(),
+        description: description.trim(),
+        tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+      };
+
+      if (userId) {
+        // Sube a Supabase Storage y guarda en BD
+        const photoFiles = photos.map((p) => p.file);
+        const saved = await saveProduct(userId, form, photoFiles);
+        onSave(saved);
+      } else {
+        // Demo mode sin auth: usa las previews locales
+        onSave({
+          id: Date.now(),
+          ...form,
+          owner: "Tú",
+          location: `Madrid · ${neighborhood}`,
+          distance: "0 km",
+          photos: photos.map((p) => p.preview),
+          isMine: true,
+          createdAt: Date.now(),
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Error al publicar el producto");
+      setSaving(false);
+    }
   };
 
   return (
@@ -98,23 +103,23 @@ export default function UploadProductForm({ onClose, onSave }) {
           <button
             type="submit"
             form="upload-form"
-            disabled={!isValid}
+            disabled={!isValid || saving}
             className={`text-sm font-bold ${
-              isValid
+              isValid && !saving
                 ? "bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent"
                 : "text-foreground/30"
             }`}
           >
-            Publicar
+            {saving ? "..." : "Publicar"}
           </button>
         </div>
 
         <form id="upload-form" onSubmit={submit} className="px-5 py-5 space-y-5">
           <Section label="Fotos" hint={`${photos.length}/5 · La primera será la principal`}>
             <div className="grid grid-cols-3 gap-2">
-              {photos.map((src, idx) => (
+              {photos.map(({ preview }, idx) => (
                 <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-foreground/10">
-                  <img src={src} alt="" className="w-full h-full object-cover" />
+                  <img src={preview} alt="" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removePhoto(idx)}
@@ -151,48 +156,27 @@ export default function UploadProductForm({ onClose, onSave }) {
           </Section>
 
           <Section label="Título">
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej: iPhone 13 Pro"
-              maxLength={40}
-              required
-            />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: iPhone 13 Pro" maxLength={40} required />
           </Section>
 
           <Section label="Detalle (opcional)">
-            <Input
-              value={storage}
-              onChange={(e) => setStorage(e.target.value)}
-              placeholder="Ej: 256GB · Negro"
-              maxLength={40}
-            />
+            <Input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="Ej: 256GB · Negro" maxLength={40} />
           </Section>
 
           <Section label="Categoría">
             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </Select>
           </Section>
 
           <Section label="Tu barrio">
             <Select value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>
-              {MADRID_NEIGHBORHOODS.map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
+              {MADRID_NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
             </Select>
           </Section>
 
           <Section label="Lo cambias por" hint="Sé concreto: más matches">
-            <Input
-              value={wants}
-              onChange={(e) => setWants(e.target.value)}
-              placeholder="Ej: PS5 + diferencia"
-              maxLength={60}
-              required
-            />
+            <Input value={wants} onChange={(e) => setWants(e.target.value)} placeholder="Ej: PS5 + diferencia" maxLength={60} required />
           </Section>
 
           <Section label="Descripción">
@@ -203,30 +187,30 @@ export default function UploadProductForm({ onClose, onSave }) {
               maxLength={250}
               rows={4}
             />
-            <p className="text-[11px] text-foreground/40 text-right mt-1">
-              {description.length}/250
-            </p>
+            <p className="text-[11px] text-foreground/40 text-right mt-1">{description.length}/250</p>
           </Section>
 
           <Section label="Etiquetas" hint="Separadas por comas">
-            <Input
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="Sin golpes, Factura, Caja original"
-            />
+            <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="Sin golpes, Factura, Caja original" />
           </Section>
+
+          {error && (
+            <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
           <div className="pt-2 pb-6">
             <button
               type="submit"
-              disabled={!isValid}
+              disabled={!isValid || saving}
               className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transition ${
-                isValid
+                isValid && !saving
                   ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.02]"
                   : "bg-foreground/20 cursor-not-allowed"
               }`}
             >
-              {isValid ? "Publicar producto" : "Completa los campos obligatorios"}
+              {saving ? "Subiendo..." : isValid ? "Publicar producto" : "Completa los campos obligatorios"}
             </button>
           </div>
         </form>
@@ -239,9 +223,7 @@ function Section({ label, hint, children }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">
-          {label}
-        </label>
+        <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">{label}</label>
         {hint && <span className="text-[11px] text-foreground/40">{hint}</span>}
       </div>
       {children}

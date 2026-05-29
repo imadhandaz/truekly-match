@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import MatchModal from "./MatchModal";
+import { recordSwipe } from "@/lib/db";
 
 const MY_PRODUCT = {
   title: "Tu producto",
@@ -9,7 +10,15 @@ const MY_PRODUCT = {
   owner: "Tú",
 };
 
-export default function SwipeDeck({ items, onMatch, onOpenChat, onSwipe, outOfSwipes, onUpgrade }) {
+export default function SwipeDeck({
+  items,
+  onMatch,
+  onOpenChat,
+  onSwipe,
+  outOfSwipes,
+  onUpgrade,
+  userId,
+}) {
   const [index, setIndex] = useState(0);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
@@ -39,11 +48,10 @@ export default function SwipeDeck({ items, onMatch, onOpenChat, onSwipe, outOfSw
     setDragging(false);
     const dt = Date.now() - startRef.current.t;
     const moved = Math.abs(drag.x) + Math.abs(drag.y);
-    const threshold = 110;
 
-    if (drag.x > threshold) {
+    if (drag.x > 110) {
       commit("yes");
-    } else if (drag.x < -threshold) {
+    } else if (drag.x < -110) {
       commit("no");
     } else if (moved < 8 && dt < 250) {
       handleTap(e);
@@ -62,7 +70,7 @@ export default function SwipeDeck({ items, onMatch, onOpenChat, onSwipe, outOfSw
     } else if (x > (w * 2) / 3 && current.photos.length > 1) {
       setPhotoIdx((p) => (p + 1) % current.photos.length);
     } else {
-      setExpanded((e) => !e);
+      setExpanded((v) => !v);
     }
   };
 
@@ -72,22 +80,48 @@ export default function SwipeDeck({ items, onMatch, onOpenChat, onSwipe, outOfSw
       setDrag({ x: 0, y: 0 });
       return;
     }
+
     setDecision(choice);
     onSwipe?.();
+
     const positive = choice === "yes" || choice === "super";
-    const chance = choice === "super" ? Math.min(1, current.matchChance + 0.3) : current.matchChance;
-    const isMatch = positive && Math.random() < chance;
+
+    // Lanza la llamada a Supabase en paralelo con la animación
+    const swipePromise =
+      positive && userId && current?.id
+        ? recordSwipe(userId, current.id, choice).catch(() => null)
+        : Promise.resolve(null);
 
     setTimeout(() => {
-      if (isMatch) {
-        setMatchedProduct(current);
-        onMatch?.(current);
-      }
-      setIndex((i) => i + 1);
-      setPhotoIdx(0);
-      setExpanded(false);
-      setDrag({ x: 0, y: 0 });
-      setDecision(null);
+      swipePromise.then((matchId) => {
+        let shouldMatch = false;
+
+        if (positive) {
+          if (userId) {
+            // Usuario autenticado: match real desde Supabase
+            shouldMatch = matchId !== null;
+          } else {
+            // Demo mode: probabilidad aleatoria
+            const chance =
+              choice === "super"
+                ? Math.min(1, (current.matchChance || 0.5) + 0.3)
+                : current.matchChance || 0.5;
+            shouldMatch = Math.random() < chance;
+          }
+        }
+
+        if (shouldMatch) {
+          const matchData = { ...current, matchId: matchId || null };
+          setMatchedProduct(matchData);
+          onMatch?.(matchData);
+        }
+
+        setIndex((i) => i + 1);
+        setPhotoIdx(0);
+        setExpanded(false);
+        setDrag({ x: 0, y: 0 });
+        setDecision(null);
+      });
     }, 250);
   };
 
@@ -205,11 +239,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
   return (
     <div
       className="absolute inset-0 rounded-3xl overflow-hidden bg-white shadow-2xl"
-      style={{
-        transform: `scale(${scale}) translateY(${translateY}px)`,
-        opacity,
-        zIndex: 10 - depth,
-      }}
+      style={{ transform: `scale(${scale}) translateY(${translateY}px)`, opacity, zIndex: 10 - depth }}
     >
       <div
         className="absolute inset-0 bg-cover bg-center transition-[background-image] duration-300"
@@ -219,12 +249,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       {depth === 0 && photos.length > 1 && (
         <div className="absolute top-3 left-3 right-3 flex gap-1 z-20">
           {photos.map((_, i) => (
-            <div
-              key={i}
-              className={`flex-1 h-1 rounded-full ${
-                i === photoIdx ? "bg-white" : "bg-white/35"
-              }`}
-            />
+            <div key={i} className={`flex-1 h-1 rounded-full ${i === photoIdx ? "bg-white" : "bg-white/35"}`} />
           ))}
         </div>
       )}
@@ -278,13 +303,10 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         {expanded && (
           <div className="mb-3 animate-fadeIn">
             <p className="text-sm text-white/90 leading-relaxed mb-3">{item.description}</p>
-            {item.tags && (
+            {item.tags?.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {item.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2.5 py-1 rounded-full bg-white/15 text-xs border border-white/20 backdrop-blur-sm"
-                  >
+                  <span key={tag} className="px-2.5 py-1 rounded-full bg-white/15 text-xs border border-white/20 backdrop-blur-sm">
                     {tag}
                   </span>
                 ))}
@@ -294,9 +316,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         )}
 
         <div className="bg-gradient-to-r from-brand-green/20 to-brand-blue/20 backdrop-blur-md rounded-xl p-3 border border-white/25">
-          <p className="text-[10px] uppercase tracking-widest text-brand-green font-bold mb-0.5">
-            Lo cambia por
-          </p>
+          <p className="text-[10px] uppercase tracking-widest text-brand-green font-bold mb-0.5">Lo cambia por</p>
           <p className="text-base font-semibold">{item.wants}</p>
         </div>
 

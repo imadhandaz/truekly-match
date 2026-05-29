@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { fetchMessages, sendMessage, subscribeToMessages } from "@/lib/db";
 
 const AUTO_REPLIES = [
   "¡Hola! Sí, todavía está disponible 👋",
@@ -14,21 +15,88 @@ const AUTO_REPLIES = [
   "Sin problema, dime cuando quieras quedar",
 ];
 
-export default function ChatScreen({ match, messages, onBack, onSend }) {
+// Modo demo (sin auth): mensajes locales pasados como props
+// Modo real (con matchId + userId): Supabase + Realtime
+export default function ChatScreen({ match, matchId, userId, onBack, messages: demeMsgs, onSend: demoSend }) {
+  const useSupabase = !!(matchId && userId);
+
+  const [dbMessages, setDbMessages] = useState([]);
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
 
+  // Carga mensajes iniciales desde Supabase
+  useEffect(() => {
+    if (!useSupabase) return;
+    fetchMessages(matchId).then(setDbMessages).catch(console.error);
+  }, [matchId, useSupabase]);
+
+  // Suscripción Realtime a mensajes nuevos
+  useEffect(() => {
+    if (!useSupabase) return;
+    return subscribeToMessages(matchId, (newMsg) => {
+      // Evita duplicar mensajes propios (añadidos optimistamente)
+      setDbMessages((prev) => {
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+    });
+  }, [matchId, useSupabase]);
+
+  // Scroll al último mensaje
+  const messages = useSupabase ? dbMessages : (demeMsgs || []);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
 
-  const send = (e) => {
+  const send = async (e) => {
     e?.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed) return;
-    onSend(trimmed);
+    if (!trimmed || sending) return;
     setText("");
+
+    if (useSupabase) {
+      setSending(true);
+      // Añade optimistamente
+      const optimistic = {
+        id: `opt-${Date.now()}`,
+        sender_id: userId,
+        text: trimmed,
+        created_at: new Date().toISOString(),
+      };
+      setDbMessages((prev) => [...prev, optimistic]);
+
+      try {
+        const saved = await sendMessage(matchId, userId, trimmed);
+        // Reemplaza el optimista con el mensaje real
+        setDbMessages((prev) =>
+          prev.map((m) => (m.id === optimistic.id ? saved : m))
+        );
+      } catch (err) {
+        console.error(err);
+        // Revierte el mensaje optimista en caso de error
+        setDbMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        setText(trimmed);
+      } finally {
+        setSending(false);
+      }
+    } else {
+      // Demo mode
+      demoSend?.(trimmed);
+    }
   };
+
+  // Normaliza mensajes a formato display
+  const displayMessages = useSupabase
+    ? dbMessages.map((m) => ({
+        mine: m.sender_id === userId,
+        text: m.text,
+        time: new Date(m.created_at).toLocaleTimeString("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }))
+    : messages;
 
   return (
     <div className="fixed inset-0 z-30 bg-background flex flex-col">
@@ -67,20 +135,21 @@ export default function ChatScreen({ match, messages, onBack, onSend }) {
           Trueque propuesto
         </p>
         <p className="text-sm">
-          <b>{match.title}</b> <span className="text-foreground/60">por</span>{" "}
+          <b>{match.title}</b>{" "}
+          <span className="text-foreground/60">por</span>{" "}
           <b>{match.wants}</b>
         </p>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
+        {displayMessages.length === 0 && (
           <div className="text-center py-12 text-foreground/50 text-sm">
             <p className="mb-2 text-2xl">🤝</p>
             <p>Has hecho match con <b>{match.owner}</b>.</p>
             <p className="mt-1">¡Rompe el hielo!</p>
           </div>
         )}
-        {messages.map((m, i) => (
+        {displayMessages.map((m, i) => (
           <Bubble key={i} mine={m.mine} text={m.text} time={m.time} />
         ))}
       </div>
@@ -97,9 +166,9 @@ export default function ChatScreen({ match, messages, onBack, onSend }) {
         />
         <button
           type="submit"
-          disabled={!text.trim()}
+          disabled={!text.trim() || sending}
           className={`w-12 h-12 rounded-full font-bold shadow-lg flex items-center justify-center transition ${
-            text.trim()
+            text.trim() && !sending
               ? "bg-gradient-to-br from-brand-green to-brand-blue text-white hover:scale-110"
               : "bg-foreground/10 text-foreground/30"
           }`}

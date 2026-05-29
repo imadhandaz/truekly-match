@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import SwipeDeck from "./components/SwipeDeck";
 import BottomNav from "./components/BottomNav";
 import UploadProductForm from "./components/UploadProductForm";
@@ -15,72 +15,110 @@ import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
 import { useAuth } from "./context/AuthContext";
+import {
+  fetchDiscoverProducts,
+  fetchMyProducts,
+  fetchMyMatches,
+  softDeleteProduct,
+} from "@/lib/db";
 import { products as seedProducts } from "./data/products";
 
-const LS_KEY = "truekly:v1";
+const LS_PREFS = "truekly:prefs:v1";
 const FREE_DAILY_SWIPES = 20;
-
 const nowTime = () =>
   new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("discover");
-  const [matches, setMatches] = useState([]);
+  const { user, profile, signOut } = useAuth();
+
+  // ── Preferencias (localStorage) ─────────────────────────────────────────
+  const [filters, setFilters] = useState({ cats: [], maxKm: 50, verifiedOnly: false });
+  const [darkMode, setDarkMode] = useState(false);
+  const [swipeCount, setSwipeCount] = useState(0);
+  const [verified, setVerified] = useState(false);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  // ── Datos de Supabase ───────────────────────────────────────────────────
+  const [discoverProducts, setDiscoverProducts] = useState([]);
+  const [discoverLoading, setDiscoverLoading] = useState(true);
   const [myProducts, setMyProducts] = useState([]);
-  const [chats, setChats] = useState({});
+  const [matches, setMatches] = useState([]);
+
+  // ── Chats demo (sin auth) ───────────────────────────────────────────────
+  const [demoChats, setDemoChats] = useState({});
+
+  // ── UI ──────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("discover");
   const [openChat, setOpenChat] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [showGold, setShowGold] = useState(false);
   const [goldReason, setGoldReason] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ cats: [], maxKm: 50, verifiedOnly: false });
-  const [darkMode, setDarkMode] = useState(false);
-  const [swipeCount, setSwipeCount] = useState(0);
-  const [verified, setVerified] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const { user, profile, signOut } = useAuth();
 
+  // ── Carga inicial de preferencias ───────────────────────────────────────
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(LS_KEY);
+      const raw = localStorage.getItem(LS_PREFS);
       if (raw) {
-        const data = JSON.parse(raw);
-        setMatches(data.matches || []);
-        setMyProducts(data.myProducts || []);
-        setChats(data.chats || {});
-        setSwipeCount(data.swipeCount || 0);
-        setFilters(data.filters || { cats: [], maxKm: 50, verifiedOnly: false });
-        setDarkMode(!!data.darkMode);
-        setVerified(!!data.verified);
+        const d = JSON.parse(raw);
+        setFilters(d.filters || { cats: [], maxKm: 50, verifiedOnly: false });
+        setDarkMode(!!d.darkMode);
+        setSwipeCount(d.swipeCount || 0);
+        setVerified(!!d.verified);
       }
     } catch {}
-    setLoaded(true);
+    setPrefsLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    try {
+      localStorage.setItem(LS_PREFS, JSON.stringify({ filters, darkMode, swipeCount, verified }));
+    } catch {}
+  }, [filters, darkMode, swipeCount, verified, prefsLoaded]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      localStorage.setItem(
-        LS_KEY,
-        JSON.stringify({ matches, myProducts, chats, swipeCount, filters, darkMode, verified })
-      );
-    } catch {}
-  }, [matches, myProducts, chats, swipeCount, filters, darkMode, verified, loaded]);
+  // ── Carga productos del discover ─────────────────────────────────────────
+  const loadDiscover = useCallback(() => {
+    setDiscoverLoading(true);
+    fetchDiscoverProducts(user?.id || null, filters)
+      .then(setDiscoverProducts)
+      .catch(() => setDiscoverProducts(seedProducts))
+      .finally(() => setDiscoverLoading(false));
+  }, [user?.id, filters]);
 
+  useEffect(() => {
+    loadDiscover();
+  }, [loadDiscover]);
+
+  // ── Carga productos propios del usuario ──────────────────────────────────
+  useEffect(() => {
+    if (!user) { setMyProducts([]); return; }
+    fetchMyProducts(user.id).then(setMyProducts).catch(console.error);
+  }, [user?.id]);
+
+  // ── Carga matches del usuario ────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) { setMatches([]); return; }
+    fetchMyMatches(user.id).then(setMatches).catch(console.error);
+  }, [user?.id]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────
   const handleMatch = (product) => {
-    setMatches((m) => (m.some((x) => x.id === product.id) ? m : [...m, product]));
+    setMatches((m) =>
+      m.some((x) => x.matchId === product.matchId || x.id === product.id)
+        ? m
+        : [...m, product]
+    );
   };
 
   const handleSwipe = () => setSwipeCount((c) => c + 1);
-
-  const remainingSwipes = Math.max(0, FREE_DAILY_SWIPES - swipeCount);
 
   const handleSaveProduct = (product) => {
     setMyProducts((p) => [product, ...p]);
@@ -88,51 +126,46 @@ export default function Home() {
     setActiveTab("profile");
   };
 
-  const handleDeleteProduct = (id) => {
+  const handleDeleteProduct = async (id) => {
     setMyProducts((p) => p.filter((x) => x.id !== id));
+    if (user) {
+      try { await softDeleteProduct(id); } catch (err) { console.error(err); }
+    }
   };
 
-  const handleSendMessage = (matchId, text) => {
+  // Demo chat (solo para usuarios sin auth)
+  const handleDemoSend = (matchId, text) => {
     const myMsg = { mine: true, text, time: nowTime() };
-    setChats((c) => {
+    setDemoChats((c) => {
       const cur = c[matchId] || { messages: [], lastUpdated: 0 };
-      return {
-        ...c,
-        [matchId]: { messages: [...cur.messages, myMsg], lastUpdated: Date.now() },
-      };
+      return { ...c, [matchId]: { messages: [...cur.messages, myMsg], lastUpdated: Date.now() } };
     });
-
     setTimeout(() => {
       const reply = { mine: false, text: pickAutoReply(), time: nowTime() };
-      setChats((c) => {
+      setDemoChats((c) => {
         const cur = c[matchId] || { messages: [], lastUpdated: 0 };
-        return {
-          ...c,
-          [matchId]: { messages: [...cur.messages, reply], lastUpdated: Date.now() },
-        };
+        return { ...c, [matchId]: { messages: [...cur.messages, reply], lastUpdated: Date.now() } };
       });
     }, 1200 + Math.random() * 1800);
   };
 
   const openChatFor = (match) => setOpenChat(match);
 
-  const openGold = (reason) => {
-    setGoldReason(reason || null);
-    setShowGold(true);
+  const openGold = (reason) => { setGoldReason(reason || null); setShowGold(true); };
+
+  const handleAccountDeleted = () => {
+    setShowDeleteAccount(false);
+    setActiveTab("discover");
+    setMatches([]);
+    setMyProducts([]);
+    setDemoChats({});
+    setVerified(false);
+    try { localStorage.removeItem(LS_PREFS); } catch {}
   };
 
-  const parseKm = (s) => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
-
-  const filteredProducts = seedProducts.filter((p) => {
-    if (filters.cats.length > 0 && !filters.cats.includes(p.category)) return false;
-    if (parseKm(p.distance) > filters.maxKm) return false;
-    if (filters.verifiedOnly && !p.verified) return false;
-    return true;
-  });
-
-  const fakeLikesYou = seedProducts.slice(0, 4);
-
+  const remainingSwipes = Math.max(0, FREE_DAILY_SWIPES - swipeCount);
   const filterActive = filters.cats.length > 0 || filters.maxKm < 50 || filters.verifiedOnly;
+  const fakeLikesYou = seedProducts.slice(0, 4);
 
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
@@ -184,9 +217,9 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
         {activeTab === "discover" && (
           <>
-            {loaded && myProducts.length === 0 && (
+            {prefsLoaded && myProducts.length === 0 && (
               <button
-                onClick={() => setShowUpload(true)}
+                onClick={() => (user ? setShowUpload(true) : setShowAuth(true))}
                 className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
               >
                 <span className="text-3xl">📦</span>
@@ -194,9 +227,7 @@ export default function Home() {
                   <p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
                     Sube tu primer producto
                   </p>
-                  <p className="text-xs text-foreground/60 mt-0.5">
-                    Es lo que vas a ofrecer en los trueques
-                  </p>
+                  <p className="text-xs text-foreground/60 mt-0.5">Es lo que vas a ofrecer en los trueques</p>
                 </div>
                 <span className="text-brand-blue-dark text-xl">›</span>
               </button>
@@ -210,14 +241,14 @@ export default function Home() {
                   · &lt;{filters.maxKm} km
                 </span>
                 <button
-                  onClick={() => setFilters({ cats: [], maxKm: 50 })}
+                  onClick={() => setFilters({ cats: [], maxKm: 50, verifiedOnly: false })}
                   className="text-foreground/60 hover:text-foreground font-bold"
                 >
                   Limpiar ✕
                 </button>
               </div>
             )}
-            {loaded && remainingSwipes <= 5 && remainingSwipes > 0 && (
+            {prefsLoaded && remainingSwipes <= 5 && remainingSwipes > 0 && (
               <button
                 onClick={() => openGold("Te quedan pocos swipes hoy")}
                 className="w-full max-w-sm mb-4 p-3 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 flex items-center gap-3 hover:scale-[1.01] transition animate-fadeIn"
@@ -227,21 +258,27 @@ export default function Home() {
                   <p className="text-xs font-bold text-foreground">
                     Te quedan <b>{remainingSwipes}</b> swipes hoy
                   </p>
-                  <p className="text-[11px] text-foreground/60">
-                    Hazte Gold para ilimitados
-                  </p>
+                  <p className="text-[11px] text-foreground/60">Hazte Gold para ilimitados</p>
                 </div>
                 <span className="text-orange-500 font-bold">→</span>
               </button>
             )}
-            <SwipeDeck
-              items={filteredProducts}
-              onMatch={handleMatch}
-              onOpenChat={openChatFor}
-              onSwipe={handleSwipe}
-              outOfSwipes={remainingSwipes <= 0}
-              onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
-            />
+            {discoverLoading ? (
+              <div className="flex flex-col items-center py-20 text-foreground/50">
+                <div className="w-10 h-10 rounded-full border-4 border-brand-green/30 border-t-brand-green animate-spin mb-4" />
+                <p className="text-sm">Cargando productos...</p>
+              </div>
+            ) : (
+              <SwipeDeck
+                items={discoverProducts}
+                onMatch={handleMatch}
+                onOpenChat={openChatFor}
+                onSwipe={handleSwipe}
+                outOfSwipes={remainingSwipes <= 0}
+                onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
+                userId={user?.id || null}
+              />
+            )}
           </>
         )}
         {activeTab === "likes" && (
@@ -254,7 +291,7 @@ export default function Home() {
           <MatchesList matches={matches} onOpen={openChatFor} />
         )}
         {activeTab === "chats" && (
-          <ChatList chats={chats} matches={matches} onOpen={openChatFor} />
+          <ChatList chats={demoChats} matches={matches} onOpen={openChatFor} />
         )}
         {activeTab === "profile" && (
           <ProfileScreen
@@ -264,7 +301,7 @@ export default function Home() {
             onBoost={() => openGold("El Boost es exclusivo de Truekly Gold")}
             darkMode={darkMode}
             onToggleDark={() => setDarkMode((d) => !d)}
-            verified={verified}
+            verified={verified || !!profile?.verified}
             onVerify={() => setShowVerify(true)}
             user={user}
             profile={profile}
@@ -286,15 +323,18 @@ export default function Home() {
         <UploadProductForm
           onClose={() => setShowUpload(false)}
           onSave={handleSaveProduct}
+          userId={user?.id || null}
         />
       )}
 
       {openChat && (
         <ChatScreen
           match={openChat}
-          messages={chats[openChat.id]?.messages || []}
+          matchId={openChat.matchId || null}
+          userId={user?.id || null}
           onBack={() => setOpenChat(null)}
-          onSend={(text) => handleSendMessage(openChat.id, text)}
+          messages={!openChat.matchId ? (demoChats[openChat.id]?.messages || []) : undefined}
+          onSend={!openChat.matchId ? (text) => handleDemoSend(openChat.id, text) : undefined}
         />
       )}
 
@@ -306,43 +346,25 @@ export default function Home() {
         <FiltersModal
           initial={filters}
           onClose={() => setShowFilters(false)}
-          onApply={(f) => {
-            setFilters(f);
-            setShowFilters(false);
-          }}
+          onApply={(f) => { setFilters(f); setShowFilters(false); }}
         />
       )}
 
       {showVerify && (
         <VerifyIdentityModal
           onClose={() => setShowVerify(false)}
-          onVerified={() => {
-            setVerified(true);
-            setShowVerify(false);
-          }}
+          onVerified={() => { setVerified(true); setShowVerify(false); }}
         />
       )}
 
       <InstallPrompt />
 
-      {showAuth && (
-        <AuthModal onClose={() => setShowAuth(false)} />
-      )}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
 
       {showDeleteAccount && (
         <DeleteAccountModal
           onClose={() => setShowDeleteAccount(false)}
-          onDeleted={() => {
-            setShowDeleteAccount(false);
-            setActiveTab("discover");
-            setMatches([]);
-            setMyProducts([]);
-            setChats({});
-            setVerified(false);
-            try {
-              localStorage.removeItem(LS_KEY);
-            } catch {}
-          }}
+          onDeleted={handleAccountDeleted}
         />
       )}
     </div>
@@ -370,9 +392,7 @@ function MatchesList({ matches, onOpen }) {
       <div className="flex flex-col items-center justify-center text-center py-20">
         <div className="text-7xl mb-4 opacity-70">💚</div>
         <h2 className="text-2xl font-bold mb-2">Sin matches todavía</h2>
-        <p className="text-foreground/60 max-w-xs">
-          Sigue descubriendo productos para encontrar trueques
-        </p>
+        <p className="text-foreground/60 max-w-xs">Sigue descubriendo productos para encontrar trueques</p>
       </div>
     );
   }
@@ -385,14 +405,11 @@ function MatchesList({ matches, onOpen }) {
       <div className="grid grid-cols-2 gap-3">
         {matches.map((m) => (
           <button
-            key={m.id}
+            key={m.matchId || m.id}
             onClick={() => onOpen(m)}
             className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left"
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${m.photos[0]}')` }}
-            />
+            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${m.photos[0]}')` }} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
               💬
