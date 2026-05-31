@@ -1,34 +1,42 @@
-import { NextResponse } from "next/server";
-import { getStripe, STRIPE_PRICES } from "@/lib/stripe";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+const PRICE_MAP = {
+  month: process.env.STRIPE_PRICE_MONTHLY,
+  halfyear: process.env.STRIPE_PRICE_HALFYEAR,
+  year: process.env.STRIPE_PRICE_YEARLY,
+};
 
 export async function POST(request) {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ error: "Stripe no configurado" }, { status: 503 });
-  }
-
   try {
     const { planId, userId, userEmail } = await request.json();
-    const priceId = STRIPE_PRICES[planId];
 
+    const priceId = PRICE_MAP[planId];
     if (!priceId) {
-      return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
+      return Response.json({ error: "Plan no válido" }, { status: 400 });
     }
 
-    const stripe = getStripe();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://truekly-match.vercel.app";
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
+      customer_email: userEmail || undefined,
+      metadata: { userId },
       success_url: `${appUrl}/?gold=success`,
       cancel_url: `${appUrl}/`,
-      metadata: { userId: userId || "", planId },
-      ...(userEmail ? { customer_email: userEmail } : {}),
+      subscription_data: {
+        trial_period_days: 3,
+        metadata: { userId },
+      },
     });
 
-    return NextResponse.json({ url: session.url });
+    return Response.json({ url: session.url });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Stripe checkout error:", err);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
 
 const PLANS = [
   {
@@ -42,34 +43,35 @@ const FEATURES = [
   { icon: "🚫", title: "Sin anuncios", sub: "Experiencia limpia" },
 ];
 
-export default function GoldPaywall({ onClose, reason, userId, userEmail }) {
+export default function GoldPaywall({ onClose, reason }) {
   const [selected, setSelected] = useState("year");
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const handlePay = async () => {
-    setError(null);
+  async function handleSubscribe() {
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: selected, userId, userEmail }),
+        body: JSON.stringify({
+          planId: selected,
+          userId: user?.id,
+          userEmail: user?.email,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al conectar con el servidor");
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error("No se recibió URL de pago");
+        console.error("Stripe checkout error:", data.error);
+        setLoading(false);
       }
     } catch (err) {
-      setError(err.message);
+      console.error("Stripe checkout error:", err);
       setLoading(false);
     }
-  };
-
-  const stripeConfigured = true; // Siempre intentamos; el servidor devuelve 503 si no está listo
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md animate-fadeIn flex items-end sm:items-center justify-center sm:p-6">
@@ -96,7 +98,9 @@ export default function GoldPaywall({ onClose, reason, userId, userEmail }) {
               Más trueques.
             </span>
           </h1>
-          {reason && <p className="text-sm text-foreground/60 italic">{reason}</p>}
+          {reason && (
+            <p className="text-sm text-foreground/60 italic">{reason}</p>
+          )}
         </div>
 
         <div className="px-6 pb-2 space-y-2.5">
@@ -139,12 +143,16 @@ export default function GoldPaywall({ onClose, reason, userId, userEmail }) {
                   </div>
                   <p className="text-xs text-foreground/60">{p.full}</p>
                   {p.save && (
-                    <p className="text-[11px] font-bold text-brand-green-dark mt-0.5">{p.save}</p>
+                    <p className="text-[11px] font-bold text-brand-green-dark mt-0.5">
+                      {p.save}
+                    </p>
                   )}
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-black">{p.price}</p>
-                  <p className="text-[10px] text-foreground/50 uppercase tracking-wide">{p.subtitle}</p>
+                  <p className="text-[10px] text-foreground/50 uppercase tracking-wide">
+                    {p.subtitle}
+                  </p>
                 </div>
               </button>
             );
@@ -152,29 +160,17 @@ export default function GoldPaywall({ onClose, reason, userId, userEmail }) {
         </div>
 
         <div className="px-6 pb-8">
-          {error && (
-            <div className="mb-3 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm text-center">
-              {error}
-            </div>
-          )}
           <button
-            onClick={handlePay}
+            onClick={handleSubscribe}
             disabled={loading}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-500 text-white font-black text-lg shadow-2xl hover:scale-[1.02] transition disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-500 text-white font-black text-lg shadow-2xl hover:scale-[1.02] transition disabled:opacity-70 disabled:scale-100"
           >
-            {loading ? (
-              <>
-                <span className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                Redirigiendo...
-              </>
-            ) : (
-              "Empezar mi prueba gratis 3 días ✨"
-            )}
+            {loading ? "Redirigiendo…" : "Empezar mi prueba gratis 3 días"}
           </button>
           <p className="text-center text-[11px] text-foreground/50 mt-3 leading-relaxed">
             Después tu plan elegido se renueva automáticamente.
             <br />
-            Cancela cuando quieras. Pago seguro con Stripe.
+            Cancela cuando quieras.
           </p>
         </div>
       </div>
