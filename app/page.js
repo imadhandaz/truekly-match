@@ -16,6 +16,7 @@ import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
 import MatchModal from "./components/MatchModal";
+import WelcomeScreen from "./components/WelcomeScreen";
 import { useAuth } from "./context/AuthContext";
 import { getSupabase } from "@/lib/supabase";
 
@@ -82,7 +83,9 @@ function HomeInner() {
   const [swipeCount, setSwipeCount] = useState(0);
   const [showVerify, setShowVerify] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState("signin");
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const { user, profile, signOut } = useAuth();
@@ -294,6 +297,23 @@ function HomeInner() {
   const filterActive = filters.cats.length > 0 || filters.maxKm < 50 || filters.verifiedOnly;
   const isGold = !!profile?.gold;
 
+  if (!user && !welcomeDismissed) {
+    return (
+      <WelcomeScreen
+        onSignUp={() => {
+          setWelcomeDismissed(true);
+          setAuthMode("signup");
+          setShowAuth(true);
+        }}
+        onSignIn={() => {
+          setWelcomeDismissed(true);
+          setAuthMode("signin");
+          setShowAuth(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
       <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
@@ -504,7 +524,7 @@ function HomeInner() {
       <InstallPrompt />
 
       {showAuth && (
-        <AuthModal onClose={() => setShowAuth(false)} />
+        <AuthModal onClose={() => setShowAuth(false)} mode={authMode} />
       )}
 
       {showDeleteAccount && (
