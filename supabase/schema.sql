@@ -2,6 +2,18 @@
 -- TRUEKLY MATCH — DATABASE SCHEMA
 -- Run this whole file in Supabase Dashboard → SQL Editor
 -- ============================================================
+--
+-- SECURITY NOTE: The `gold` and `verified` fields on profiles MUST NOT be
+-- settable by users directly. The current RLS policy allows users to UPDATE
+-- their own profile row, which includes these fields. To fix, either:
+--   1. Remove those columns from the UPDATE policy using a column-level check:
+--      create policy "Users can update own profile (safe fields only)"
+--        on public.profiles for update using (auth.uid() = id)
+--        with check (gold = (select gold from public.profiles where id = auth.uid())
+--                and verified = (select verified from public.profiles where id = auth.uid()));
+--   2. Or handle gold/verified via a server-side trigger that rejects client writes
+--      (e.g., a BEFORE UPDATE trigger with security definer that ignores those columns).
+-- ============================================================
 
 -- =========================
 -- 1. PROFILES (user data)

@@ -82,7 +82,7 @@ export default function SwipeDeck({
     }
 
     setDecision(choice);
-    onSwipe?.();
+    onSwipe?.(current, choice);
 
     const positive = choice === "yes" || choice === "super";
 
