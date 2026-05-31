@@ -13,6 +13,13 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
   const [info, setInfo] = useState(null);
 
   const isSignup = mode === "signup";
+  const isReset = mode === "reset";
+
+  const switchMode = (next) => {
+    setMode(next);
+    setError(null);
+    setInfo(null);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -22,7 +29,13 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
     const supabase = getSupabase();
 
     try {
-      if (isSignup) {
+      if (isReset) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: process.env.NEXT_PUBLIC_APP_URL + "/reset-password",
+        });
+        if (error) throw error;
+        setInfo("Te hemos enviado un email con el enlace para restablecer tu contraseña.");
+      } else if (isSignup) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -51,6 +64,12 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
     }
   };
 
+  const headerTitle = isReset
+    ? "Restablecer contraseña"
+    : isSignup
+    ? "Crear cuenta"
+    : "Iniciar sesión";
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md animate-fadeIn flex items-end sm:items-center justify-center sm:p-6">
       <div className="bg-background w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl">
@@ -63,107 +82,166 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
             Cerrar
           </button>
           <h2 className="font-bold bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
-            {isSignup ? "Crear cuenta" : "Iniciar sesión"}
+            {headerTitle}
           </h2>
           <span className="w-12" />
         </div>
 
         <div className="px-6 py-6">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white text-2xl font-black shadow-xl">
-              T
-            </div>
-            <h3 className="text-xl font-black">
-              {isSignup ? "Únete a Truekly Match" : "Bienvenido de vuelta"}
-            </h3>
-            <p className="text-sm text-foreground/60 mt-1">
-              {isSignup ? "Sin tarjeta, sin spam" : "Sigue truekeando"}
-            </p>
-          </div>
-
-          <form onSubmit={submit} className="space-y-3">
-            {isSignup && (
-              <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Tu nombre (lo verán otros)"
-                autoComplete="name"
-                maxLength={30}
-              />
-            )}
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              autoComplete="email"
-              required
-            />
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={isSignup ? "Contraseña (min 6 caracteres)" : "Contraseña"}
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              minLength={6}
-              required
-            />
-
-            {error && (
-              <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-                {error}
+          {isReset ? (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white text-2xl font-black shadow-xl">
+                  T
+                </div>
+                <h3 className="text-xl font-black">¿Olvidaste tu contraseña?</h3>
+                <p className="text-sm text-foreground/60 mt-1">
+                  Te enviamos un enlace para recuperarla
+                </p>
               </div>
-            )}
-            {info && (
-              <div className="px-3 py-2 rounded-xl bg-brand-green/10 border border-brand-green/30 text-brand-green-dark text-sm">
-                {info}
-              </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-[1.01] transition disabled:opacity-50"
-            >
-              {busy ? "..." : isSignup ? "Crear cuenta" : "Entrar"}
-            </button>
-          </form>
+              <form onSubmit={submit} className="space-y-3">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  autoComplete="email"
+                  required
+                />
 
-          <div className="mt-5 text-center text-sm">
-            {isSignup ? (
-              <>
-                ¿Ya tienes cuenta?{" "}
+                {error && (
+                  <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                    {error}
+                  </div>
+                )}
+                {info && (
+                  <div className="px-3 py-2 rounded-xl bg-brand-green/10 border border-brand-green/30 text-brand-green-dark text-sm">
+                    {info}
+                  </div>
+                )}
+
                 <button
-                  onClick={() => {
-                    setMode("signin");
-                    setError(null);
-                    setInfo(null);
-                  }}
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-[1.01] transition disabled:opacity-50"
+                >
+                  {busy ? "..." : "Enviar enlace"}
+                </button>
+              </form>
+
+              <div className="mt-5 text-center text-sm">
+                <button
+                  onClick={() => switchMode("signin")}
                   className="font-bold bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent"
                 >
-                  Inicia sesión
+                  ← Volver
                 </button>
-              </>
-            ) : (
-              <>
-                ¿No tienes cuenta?{" "}
-                <button
-                  onClick={() => {
-                    setMode("signup");
-                    setError(null);
-                    setInfo(null);
-                  }}
-                  className="font-bold bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent"
-                >
-                  Regístrate
-                </button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white text-2xl font-black shadow-xl">
+                  T
+                </div>
+                <h3 className="text-xl font-black">
+                  {isSignup ? "Únete a Truekly Match" : "Bienvenido de vuelta"}
+                </h3>
+                <p className="text-sm text-foreground/60 mt-1">
+                  {isSignup ? "Sin tarjeta, sin spam" : "Sigue truekeando"}
+                </p>
+              </div>
 
-          <p className="text-[11px] text-foreground/45 text-center mt-5">
-            Al registrarte aceptas nuestros Términos y Política de privacidad.
-          </p>
+              <form onSubmit={submit} className="space-y-3">
+                {isSignup && (
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Tu nombre (lo verán otros)"
+                    autoComplete="name"
+                    maxLength={30}
+                  />
+                )}
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  autoComplete="email"
+                  required
+                />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={isSignup ? "Contraseña (min 6 caracteres)" : "Contraseña"}
+                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  minLength={6}
+                  required
+                />
+
+                {!isSignup && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => switchMode("reset")}
+                      className="text-sm text-foreground/60 hover:text-foreground transition"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                    {error}
+                  </div>
+                )}
+                {info && (
+                  <div className="px-3 py-2 rounded-xl bg-brand-green/10 border border-brand-green/30 text-brand-green-dark text-sm">
+                    {info}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-[1.01] transition disabled:opacity-50"
+                >
+                  {busy ? "..." : isSignup ? "Crear cuenta" : "Entrar"}
+                </button>
+              </form>
+
+              <div className="mt-5 text-center text-sm">
+                {isSignup ? (
+                  <>
+                    ¿Ya tienes cuenta?{" "}
+                    <button
+                      onClick={() => switchMode("signin")}
+                      className="font-bold bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent"
+                    >
+                      Inicia sesión
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    ¿No tienes cuenta?{" "}
+                    <button
+                      onClick={() => switchMode("signup")}
+                      className="font-bold bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent"
+                    >
+                      Regístrate
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <p className="text-[11px] text-foreground/45 text-center mt-5">
+                Al registrarte aceptas nuestros Términos y Política de privacidad.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
