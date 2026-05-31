@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import SwipeDeck from "./components/SwipeDeck";
 import BottomNav from "./components/BottomNav";
 import UploadProductForm from "./components/UploadProductForm";
 import ProfileScreen from "./components/ProfileScreen";
-import ChatScreen, { pickAutoReply } from "./components/ChatScreen";
+import ChatScreen from "./components/ChatScreen";
 import ChatList from "./components/ChatList";
 import GoldPaywall from "./components/GoldPaywall";
 import LikesYouScreen from "./components/LikesYouScreen";
@@ -14,208 +15,287 @@ import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
-import { CardSkeleton, MatchCardSkeleton } from "./components/Skeleton";
+import MatchModal from "./components/MatchModal";
 import { useAuth } from "./context/AuthContext";
-import {
-  fetchDiscoverProducts,
-  fetchMyProducts,
-  fetchMyMatches,
-  softDeleteProduct,
-} from "@/lib/db";
-import { setupPushNotifications } from "@/lib/notifications";
-import { getUserLocation, addDistances } from "@/lib/geo";
-import { products as seedProducts } from "./data/products";
+import { getSupabase } from "@/lib/supabase";
 
-const LS_PREFS = "truekly:prefs:v1";
+const UI_LS_KEY = "truekly:ui:v2";
 const FREE_DAILY_SWIPES = 20;
-const nowTime = () =>
-  new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
-export default function Home() {
-  const { user, profile, signOut } = useAuth();
+// Shape a products-table row into a card object for SwipeDeck / MatchModal
+function shapeProduct(p) {
+  const ownerProfile = p.profiles || {};
+  return {
+    id: p.id,
+    owner_id: p.owner_id,
+    title: p.title,
+    storage: p.storage_detail || "",
+    category: p.category,
+    owner: ownerProfile.display_name || ownerProfile.username || "Usuario",
+    verified: ownerProfile.verified || false,
+    gold: ownerProfile.gold || false,
+    distance: "",
+    photos: p.photos || [],
+    wants: p.wants || "",
+    description: p.description || "",
+    tags: p.tags || [],
+    location: `Madrid · ${p.neighborhood || ""}`,
+    neighborhood: p.neighborhood || "",
+  };
+}
 
-  // ── Preferencias (localStorage) ─────────────────────────────────────────
-  const [filters, setFilters] = useState({ cats: [], maxKm: 50, verifiedOnly: false });
-  const [darkMode, setDarkMode] = useState(false);
-  const [swipeCount, setSwipeCount] = useState(0);
-  const [verified, setVerified] = useState(false);
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
+// Shape a matches-table row into a card for MatchesList / ChatScreen
+// Always shows the product of the OTHER user (product_b from user_a's perspective)
+function shapeMatch(match, userId) {
+  const isUserA = match.user_a === userId;
+  const product = isUserA
+    ? match.product_b_data || match.products || {}
+    : match.product_a_data || match.products || {};
+  const ownerProfile = product.profiles || {};
+  return {
+    id: match.id,
+    title: product.title || "",
+    photos: product.photos || [],
+    wants: product.wants || "",
+    owner: ownerProfile.display_name || ownerProfile.username || "Usuario",
+    verified: ownerProfile.verified || false,
+    location: `Madrid · ${product.neighborhood || ""}`,
+    neighborhood: product.neighborhood || "",
+  };
+}
 
-  // ── Datos Supabase ───────────────────────────────────────────────────────
-  const [discoverProducts, setDiscoverProducts] = useState([]);
-  const [discoverLoading, setDiscoverLoading] = useState(true);
-  const [myProducts, setMyProducts] = useState([]);
-  const [matches, setMatches] = useState([]);
-
-  // ── Geolocalización ──────────────────────────────────────────────────────
-  const [userLocation, setUserLocation] = useState(null);
-
-  // ── Demo chats (sin auth) ────────────────────────────────────────────────
-  const [demoChats, setDemoChats] = useState({});
-
-  // ── UI ──────────────────────────────────────────────────────────────────
+function HomeInner() {
   const [activeTab, setActiveTab] = useState("discover");
+  const [products, setProducts] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [myProducts, setMyProducts] = useState([]);
+  const [myProductId, setMyProductId] = useState(null);
+  const [likes, setLikes] = useState([]);
   const [openChat, setOpenChat] = useState(null);
+  const [matchModalCard, setMatchModalCard] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [showGold, setShowGold] = useState(false);
   const [goldReason, setGoldReason] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({ cats: [], maxKm: 50, verifiedOnly: false });
+  const [darkMode, setDarkMode] = useState(false);
+  const [swipeCount, setSwipeCount] = useState(0);
   const [showVerify, setShowVerify] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [loaded, setLoaded] = useState(false);
 
-  // ── Carga preferencias ───────────────────────────────────────────────────
+  const { user, profile, signOut } = useAuth();
+  const supabase = getSupabase();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Restore UI prefs from localStorage
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(LS_PREFS);
+      const raw = localStorage.getItem(UI_LS_KEY);
       if (raw) {
-        const d = JSON.parse(raw);
-        setFilters(d.filters || { cats: [], maxKm: 50, verifiedOnly: false });
-        setDarkMode(!!d.darkMode);
-        setSwipeCount(d.swipeCount || 0);
-        setVerified(!!d.verified);
+        const data = JSON.parse(raw);
+        setDarkMode(!!data.darkMode);
+        setFilters(data.filters || { cats: [], maxKm: 50, verifiedOnly: false });
+        setSwipeCount(data.swipeCount || 0);
       }
     } catch {}
-    setPrefsLoaded(true);
+    setLoaded(true);
   }, []);
 
+  // Persist UI prefs
   useEffect(() => {
-    if (!prefsLoaded) return;
+    if (!loaded) return;
     try {
-      localStorage.setItem(LS_PREFS, JSON.stringify({ filters, darkMode, swipeCount, verified }));
+      localStorage.setItem(UI_LS_KEY, JSON.stringify({ darkMode, filters, swipeCount }));
     } catch {}
-  }, [filters, darkMode, swipeCount, verified, prefsLoaded]);
+  }, [darkMode, filters, swipeCount, loaded]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  // ── Gold success desde Stripe redirect ───────────────────────────────────
+  // Handle ?gold=success after Stripe redirect
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("gold") === "success") {
-      showToast("¡Bienvenido a Gold! ✨ Ya tienes acceso a todas las ventajas.");
-      window.history.replaceState({}, "", "/");
+    if (searchParams.get("gold") === "success") {
+      alert("¡Ya eres Gold! ✨ Disfruta de todos los beneficios.");
+      router.replace("/");
     }
-  }, []);
+  }, [searchParams, router]);
 
-  // ── Geolocalización silenciosa ────────────────────────────────────────────
+  // Fetch all data when user changes
   useEffect(() => {
-    getUserLocation().then(setUserLocation).catch(() => {});
-  }, []);
-
-  // ── Setup push notifications al loguearse ────────────────────────────────
-  useEffect(() => {
-    if (!user) return;
-    setupPushNotifications(user.id);
+    if (!user) {
+      fetchPublicProducts(null);
+      setMatches([]);
+      setMyProducts([]);
+      setMyProductId(null);
+      setLikes([]);
+      return;
+    }
+    fetchAll(user.id);
   }, [user?.id]);
 
-  // ── Carga productos discover ─────────────────────────────────────────────
-  const loadDiscover = useCallback(() => {
-    setDiscoverLoading(true);
-    fetchDiscoverProducts(user?.id || null, filters)
-      .then(setDiscoverProducts)
-      .catch(() => setDiscoverProducts(seedProducts))
-      .finally(() => setDiscoverLoading(false));
-  }, [user?.id, filters]);
-
-  useEffect(() => { loadDiscover(); }, [loadDiscover]);
-
-  // ── Carga productos propios ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!user) { setMyProducts([]); return; }
-    fetchMyProducts(user.id).then(setMyProducts).catch(console.error);
-  }, [user?.id]);
-
-  // ── Carga matches ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!user) { setMatches([]); return; }
-    fetchMyMatches(user.id).then(setMatches).catch(console.error);
-  }, [user?.id]);
-
-  // ── Distancias reales con geolocalización ────────────────────────────────
-  const productsWithDistance = useMemo(() => {
-    const base = addDistances(discoverProducts, userLocation);
-    if (!userLocation) return base;
-    return base.filter((p) => (p._km ?? 999) <= filters.maxKm);
-  }, [discoverProducts, userLocation, filters.maxKm]);
-
-  // ── Toast helper ─────────────────────────────────────────────────────────
-  const toastTimer = useRef(null);
-  const showToast = (msg) => {
-    setToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  const fetchPublicProducts = async (userId) => {
+    let query = supabase
+      .from("products")
+      .select("*, profiles!owner_id(username, display_name, neighborhood, verified, gold)")
+      .eq("active", true);
+    if (userId) query = query.neq("owner_id", userId);
+    const { data } = await query;
+    setProducts((data || []).map(shapeProduct));
   };
 
-  // ── Handlers ────────────────────────────────────────────────────────────
-  const handleMatch = (product) => {
-    setMatches((m) =>
-      m.some((x) => x.matchId === product.matchId || x.id === product.id)
-        ? m : [...m, product]
+  const fetchAll = async (userId) => {
+    // Get user's first active product (used for match detection)
+    const { data: myProd } = await supabase
+      .from("products")
+      .select("id")
+      .eq("owner_id", userId)
+      .eq("active", true)
+      .limit(1)
+      .maybeSingle();
+    const myProdId = myProd?.id || null;
+    setMyProductId(myProdId);
+
+    // Fetch IDs the user already swiped
+    const { data: swipedRows } = await supabase
+      .from("swipes")
+      .select("product_id")
+      .eq("swiper_id", userId);
+    const swipedIds = new Set((swipedRows || []).map((s) => s.product_id));
+
+    // Fetch discover products (exclude own + already swiped)
+    const { data: productsData } = await supabase
+      .from("products")
+      .select("*, profiles!owner_id(username, display_name, neighborhood, verified, gold)")
+      .eq("active", true)
+      .neq("owner_id", userId);
+    setProducts(
+      (productsData || [])
+        .filter((p) => !swipedIds.has(p.id))
+        .map(shapeProduct)
     );
+
+    // Fetch matches with both products joined for perspective-aware display
+    const { data: matchesData } = await supabase
+      .from("matches")
+      .select(
+        `id, user_a, user_b, product_a, product_b, created_at,
+         product_b_data:products!product_b(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified)),
+         product_a_data:products!product_a(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified))`
+      )
+      .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+    setMatches((matchesData || []).map((m) => shapeMatch(m, userId)));
+
+    // Fetch user's own products
+    const { data: myProdsData } = await supabase
+      .from("products")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false });
+    setMyProducts(myProdsData || []);
+
+    // Fetch likes (who swiped yes/super on user's product)
+    // NOTE: requires an RLS policy allowing users to read swipes on their own products
+    if (myProdId) {
+      const { data: likesData } = await supabase
+        .from("swipes")
+        .select("id, swiper_id, products!product_id(id, title, photos, profiles!owner_id(display_name))")
+        .eq("product_id", myProdId)
+        .in("choice", ["yes", "super"]);
+      setLikes(
+        (likesData || []).map((row) => ({
+          id: row.swiper_id,
+          title: row.products?.title || "",
+          photos: row.products?.photos || [],
+          owner: row.products?.profiles?.display_name || "Usuario",
+        }))
+      );
+    }
   };
 
-  const handleSwipe = () => setSwipeCount((c) => c + 1);
+  const handleSwipe = async (product, choice) => {
+    setSwipeCount((c) => c + 1);
+    if (!user) return;
+
+    await supabase.from("swipes").insert({
+      swiper_id: user.id,
+      product_id: product.id,
+      choice,
+    });
+
+    // Remove from deck immediately
+    setProducts((ps) => ps.filter((p) => p.id !== product.id));
+
+    // Real match detection for positive swipes
+    if ((choice === "yes" || choice === "super") && myProductId) {
+      const { data: mutual } = await supabase
+        .from("swipes")
+        .select("id")
+        .eq("swiper_id", product.owner_id)
+        .eq("product_id", myProductId)
+        .in("choice", ["yes", "super"])
+        .maybeSingle();
+
+      if (mutual) {
+        const { data: newMatch } = await supabase
+          .from("matches")
+          .insert({
+            user_a: user.id,
+            user_b: product.owner_id,
+            product_a: myProductId,
+            product_b: product.id,
+          })
+          .select("id")
+          .maybeSingle();
+
+        // Refresh matches list
+        fetchAll(user.id);
+
+        // Show match modal
+        setMatchModalCard({ ...product, matchId: newMatch?.id });
+      }
+    }
+  };
 
   const handleSaveProduct = (product) => {
-    setMyProducts((p) => [product, ...p]);
+    // Re-fetch after upload so myProductId and myProducts are up to date
+    if (user) fetchAll(user.id);
     setShowUpload(false);
     setActiveTab("profile");
-    showToast("¡Producto publicado! 🎉");
   };
 
   const handleDeleteProduct = async (id) => {
-    setMyProducts((p) => p.filter((x) => x.id !== id));
     if (user) {
-      try { await softDeleteProduct(id); } catch (err) { console.error(err); }
+      await supabase.from("products").delete().eq("id", id).eq("owner_id", user.id);
     }
-  };
-
-  const handleDemoSend = (matchId, text) => {
-    const myMsg = { mine: true, text, time: nowTime() };
-    setDemoChats((c) => {
-      const cur = c[matchId] || { messages: [], lastUpdated: 0 };
-      return { ...c, [matchId]: { messages: [...cur.messages, myMsg], lastUpdated: Date.now() } };
-    });
-    setTimeout(() => {
-      const reply = { mine: false, text: pickAutoReply(), time: nowTime() };
-      setDemoChats((c) => {
-        const cur = c[matchId] || { messages: [], lastUpdated: 0 };
-        return { ...c, [matchId]: { messages: [...cur.messages, reply], lastUpdated: Date.now() } };
-      });
-    }, 1200 + Math.random() * 1800);
+    setMyProducts((p) => p.filter((x) => x.id !== id));
   };
 
   const openChatFor = (match) => setOpenChat(match);
-  const openGold = (reason) => { setGoldReason(reason || null); setShowGold(true); };
 
-  const handleAccountDeleted = () => {
-    setShowDeleteAccount(false);
-    setActiveTab("discover");
-    setMatches([]);
-    setMyProducts([]);
-    setDemoChats({});
-    setVerified(false);
-    try { localStorage.removeItem(LS_PREFS); } catch {}
+  const openGold = (reason) => {
+    setGoldReason(reason || null);
+    setShowGold(true);
   };
+
+  const parseKm = (s) => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
+
+  const filteredProducts = products.filter((p) => {
+    if (filters.cats.length > 0 && !filters.cats.includes(p.category)) return false;
+    if (p.distance && parseKm(p.distance) > filters.maxKm) return false;
+    if (filters.verifiedOnly && !p.verified) return false;
+    return true;
+  });
 
   const remainingSwipes = Math.max(0, FREE_DAILY_SWIPES - swipeCount);
   const filterActive = filters.cats.length > 0 || filters.maxKm < 50 || filters.verifiedOnly;
-  const fakeLikesYou = seedProducts.slice(0, 4);
+  const isGold = !!profile?.gold;
 
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-foreground text-background text-sm font-bold shadow-2xl toast max-w-[90vw] text-center">
-          {toast}
-        </div>
-      )}
-
       <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-blue/30">
@@ -244,10 +324,13 @@ export default function Home() {
               onClick={() => openGold("Hazte Gold")}
               className="px-3 py-1.5 rounded-full text-sm font-black bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-md hover:scale-105 transition flex items-center gap-1"
             >
-              <span>✨</span><span>Gold</span>
+              <span>✨</span>
+              <span>Gold</span>
             </button>
           )}
-          <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>⚙</IconButton>
+          <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>
+            ⚙
+          </IconButton>
           <IconButton
             label="Subir producto"
             onClick={() => (user ? setShowUpload(true) : setShowAuth(true))}
@@ -259,12 +342,11 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
-
         {activeTab === "discover" && (
           <>
-            {prefsLoaded && !discoverLoading && myProducts.length === 0 && (
+            {loaded && myProducts.length === 0 && (
               <button
-                onClick={() => (user ? setShowUpload(true) : setShowAuth(true))}
+                onClick={() => setShowUpload(true)}
                 className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
               >
                 <span className="text-3xl">📦</span>
@@ -272,12 +354,13 @@ export default function Home() {
                   <p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
                     Sube tu primer producto
                   </p>
-                  <p className="text-xs text-foreground/60 mt-0.5">Es lo que vas a ofrecer en los trueques</p>
+                  <p className="text-xs text-foreground/60 mt-0.5">
+                    Es lo que vas a ofrecer en los trueques
+                  </p>
                 </div>
                 <span className="text-brand-blue-dark text-xl">›</span>
               </button>
             )}
-
             {filterActive && (
               <div className="w-full max-w-sm mb-4 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-between text-xs animate-fadeIn">
                 <span className="font-semibold text-brand-blue-dark">
@@ -285,18 +368,16 @@ export default function Home() {
                     ? `${filters.cats.length} categoría${filters.cats.length > 1 ? "s" : ""}`
                     : "Todas categorías"}{" "}
                   · &lt;{filters.maxKm} km
-                  {userLocation && <span className="text-brand-green-dark"> · 📍 Real</span>}
                 </span>
                 <button
-                  onClick={() => setFilters({ cats: [], maxKm: 50, verifiedOnly: false })}
+                  onClick={() => setFilters({ cats: [], maxKm: 50 })}
                   className="text-foreground/60 hover:text-foreground font-bold"
                 >
                   Limpiar ✕
                 </button>
               </div>
             )}
-
-            {prefsLoaded && remainingSwipes <= 5 && remainingSwipes > 0 && (
+            {loaded && remainingSwipes <= 5 && remainingSwipes > 0 && (
               <button
                 onClick={() => openGold("Te quedan pocos swipes hoy")}
                 className="w-full max-w-sm mb-4 p-3 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 flex items-center gap-3 hover:scale-[1.01] transition animate-fadeIn"
@@ -306,47 +387,36 @@ export default function Home() {
                   <p className="text-xs font-bold text-foreground">
                     Te quedan <b>{remainingSwipes}</b> swipes hoy
                   </p>
-                  <p className="text-[11px] text-foreground/60">Hazte Gold para ilimitados</p>
+                  <p className="text-[11px] text-foreground/60">
+                    Hazte Gold para ilimitados
+                  </p>
                 </div>
                 <span className="text-orange-500 font-bold">→</span>
               </button>
             )}
-
-            {discoverLoading ? (
-              <div className="w-full max-w-sm mx-auto animate-fadeIn">
-                <CardSkeleton />
-              </div>
-            ) : productsWithDistance.length === 0 ? (
-              <EmptyDiscover onRefresh={loadDiscover} hasFilters={filterActive} onClearFilters={() => setFilters({ cats: [], maxKm: 50, verifiedOnly: false })} />
-            ) : (
-              <SwipeDeck
-                items={productsWithDistance}
-                onMatch={handleMatch}
-                onOpenChat={openChatFor}
-                onSwipe={handleSwipe}
-                outOfSwipes={remainingSwipes <= 0}
-                onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
-                userId={user?.id || null}
-              />
-            )}
+            <SwipeDeck
+              items={filteredProducts}
+              onMatch={() => {}}
+              onOpenChat={openChatFor}
+              onSwipe={handleSwipe}
+              outOfSwipes={!isGold && remainingSwipes <= 0}
+              onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
+            />
           </>
         )}
-
         {activeTab === "likes" && (
           <LikesYouScreen
-            products={fakeLikesYou}
+            products={likes}
+            isGold={isGold}
             onUpgrade={() => openGold("Hazte Gold para ver quién te ha dado like")}
           />
         )}
-
         {activeTab === "matches" && (
           <MatchesList matches={matches} onOpen={openChatFor} />
         )}
-
         {activeTab === "chats" && (
-          <ChatList chats={demoChats} matches={matches} onOpen={openChatFor} />
+          <ChatList chats={{}} matches={matches} onOpen={openChatFor} />
         )}
-
         {activeTab === "profile" && (
           <ProfileScreen
             myProducts={myProducts}
@@ -355,7 +425,7 @@ export default function Home() {
             onBoost={() => openGold("El Boost es exclusivo de Truekly Gold")}
             darkMode={darkMode}
             onToggleDark={() => setDarkMode((d) => !d)}
-            verified={verified || !!profile?.verified}
+            verified={profile?.verified || false}
             onVerify={() => setShowVerify(true)}
             user={user}
             profile={profile}
@@ -370,67 +440,96 @@ export default function Home() {
         active={activeTab}
         onChange={setActiveTab}
         matchCount={matches.length}
-        likesCount={fakeLikesYou.length}
+        likesCount={likes.length}
       />
 
       {showUpload && (
         <UploadProductForm
           onClose={() => setShowUpload(false)}
           onSave={handleSaveProduct}
-          userId={user?.id || null}
         />
       )}
 
       {openChat && (
         <ChatScreen
           match={openChat}
-          matchId={openChat.matchId || null}
-          userId={user?.id || null}
           onBack={() => setOpenChat(null)}
-          messages={!openChat.matchId ? (demoChats[openChat.id]?.messages || []) : undefined}
-          onSend={!openChat.matchId ? (text) => handleDemoSend(openChat.id, text) : undefined}
+        />
+      )}
+
+      {matchModalCard && (
+        <MatchModal
+          myProduct={
+            myProducts[0]
+              ? {
+                  title: myProducts[0].title,
+                  photos: myProducts[0].photos,
+                  owner: profile?.display_name || "Tú",
+                }
+              : { title: "Tu producto", photos: [], owner: "Tú" }
+          }
+          theirProduct={matchModalCard}
+          onClose={() => setMatchModalCard(null)}
+          onChat={() => {
+            setMatchModalCard(null);
+            const m = matches.find((x) => x.id === matchModalCard.matchId);
+            if (m) openChatFor(m);
+            else setActiveTab("matches");
+          }}
         />
       )}
 
       {showGold && (
-        <GoldPaywall
-          onClose={() => setShowGold(false)}
-          reason={goldReason}
-          userId={user?.id || null}
-          userEmail={user?.email || null}
-        />
+        <GoldPaywall onClose={() => setShowGold(false)} reason={goldReason} />
       )}
 
       {showFilters && (
         <FiltersModal
           initial={filters}
           onClose={() => setShowFilters(false)}
-          onApply={(f) => { setFilters(f); setShowFilters(false); }}
+          onApply={(f) => {
+            setFilters(f);
+            setShowFilters(false);
+          }}
         />
       )}
 
       {showVerify && (
         <VerifyIdentityModal
           onClose={() => setShowVerify(false)}
-          onVerified={() => { setVerified(true); setShowVerify(false); showToast("¡Identidad verificada! ✓"); }}
+          onVerified={() => setShowVerify(false)}
         />
       )}
 
       <InstallPrompt />
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showAuth && (
+        <AuthModal onClose={() => setShowAuth(false)} />
+      )}
 
       {showDeleteAccount && (
         <DeleteAccountModal
           onClose={() => setShowDeleteAccount(false)}
-          onDeleted={handleAccountDeleted}
+          onDeleted={() => {
+            setShowDeleteAccount(false);
+            setActiveTab("discover");
+            setMatches([]);
+            setMyProducts([]);
+            setLikes([]);
+          }}
         />
       )}
     </div>
   );
 }
 
-// ── Sub-componentes ──────────────────────────────────────────────────────────
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeInner />
+    </Suspense>
+  );
+}
 
 function IconButton({ children, label, onClick, highlight, active }) {
   let cls = "bg-white/70 hover:bg-white backdrop-blur border-foreground/5";
@@ -447,65 +546,39 @@ function IconButton({ children, label, onClick, highlight, active }) {
   );
 }
 
-function EmptyDiscover({ onRefresh, hasFilters, onClearFilters }) {
-  return (
-    <div className="flex flex-col items-center justify-center text-center px-6 py-16 animate-fadeInUp">
-      <div className="text-7xl mb-5">🌿</div>
-      <h2 className="text-2xl font-bold mb-2">
-        {hasFilters ? "Sin resultados con estos filtros" : "¡Has visto todo!"}
-      </h2>
-      <p className="text-foreground/60 text-sm mb-6 max-w-xs">
-        {hasFilters
-          ? "Prueba ampliando el radio de distancia o cambiando las categorías."
-          : "Vuelve más tarde, hay nuevos productos cada día."}
-      </p>
-      {hasFilters ? (
-        <button
-          onClick={onClearFilters}
-          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-105 transition"
-        >
-          Limpiar filtros
-        </button>
-      ) : (
-        <button
-          onClick={onRefresh}
-          className="px-6 py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 font-bold transition"
-        >
-          Actualizar
-        </button>
-      )}
-    </div>
-  );
-}
-
 function MatchesList({ matches, onOpen }) {
   if (matches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center py-20 animate-fadeInUp">
+      <div className="flex flex-col items-center justify-center text-center py-20">
         <div className="text-7xl mb-4 opacity-70">💚</div>
         <h2 className="text-2xl font-bold mb-2">Sin matches todavía</h2>
-        <p className="text-foreground/60 max-w-xs text-sm">
-          Da like a los productos que te interesan y espera a que la otra persona haga lo mismo.
+        <p className="text-foreground/60 max-w-xs">
+          Sigue descubriendo productos para encontrar trueques
         </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md animate-fadeIn">
+    <div className="w-full max-w-md">
       <h2 className="text-2xl font-bold mb-5 bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
         Tus matches ({matches.length})
       </h2>
       <div className="grid grid-cols-2 gap-3">
-        {matches.map((m, i) => (
+        {matches.map((m) => (
           <button
-            key={m.matchId || m.id}
+            key={m.id}
             onClick={() => onOpen(m)}
-            className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left animate-fadeIn stagger-${Math.min(i + 1, 4)}`}
+            className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left"
           >
-            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${m.photos[0]}')` }} />
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url('${m.photos[0]}')` }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">💬</div>
+            <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
+              💬
+            </div>
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
               <p className="font-bold text-sm leading-tight">{m.title}</p>
               <p className="text-[11px] text-white/80">{m.owner}</p>

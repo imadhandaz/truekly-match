@@ -1,51 +1,68 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { fetchMessages, sendMessage, subscribeToMessages } from "@/lib/db";
-import { notifyUser } from "@/lib/notifications";
+import { getSupabase } from "@/lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
-const AUTO_REPLIES = [
-  "¡Hola! Sí, todavía está disponible 👋",
-  "¿En qué barrio estás? Por si podemos vernos.",
-  "¿Tienes fotos de más ángulos?",
-  "¿Cuánto pides de diferencia?",
-  "Me interesa, ¿lo cambiarías ya esta semana?",
-  "Yo estoy por el centro, ¿te viene bien Atocha?",
-  "¿Y si añadimos algo más al trueque?",
-  "Ok, lo consulto y te digo en un rato 🙏",
-  "Sin problema, dime cuando quieras quedar",
-];
+function formatTime(isoString) {
+  return new Date(isoString).toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-// Modo demo (sin auth): mensajes locales pasados como props
-// Modo real (con matchId + userId): Supabase + Realtime
-export default function ChatScreen({ match, matchId, userId, onBack, messages: demeMsgs, onSend: demoSend }) {
-  const useSupabase = !!(matchId && userId);
-
-  const [dbMessages, setDbMessages] = useState([]);
+export default function ChatScreen({ match, onBack }) {
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
+  const { user } = useAuth();
+  const supabase = getSupabase();
+  const matchId = match.id;
 
-  // Carga mensajes iniciales desde Supabase
   useEffect(() => {
-    if (!useSupabase) return;
-    fetchMessages(matchId).then(setDbMessages).catch(console.error);
-  }, [matchId, useSupabase]);
+    if (!matchId) return;
 
-  // Suscripción Realtime a mensajes nuevos
-  useEffect(() => {
-    if (!useSupabase) return;
-    return subscribeToMessages(matchId, (newMsg) => {
-      // Evita duplicar mensajes propios (añadidos optimistamente)
-      setDbMessages((prev) => {
-        if (prev.some((m) => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
-      });
-    });
-  }, [matchId, useSupabase]);
+    supabase
+      .from("messages")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => setMessages(data || []));
 
-  // Scroll al último mensaje
-  const messages = useSupabase ? dbMessages : (demeMsgs || []);
+    const channel = supabase
+      .channel(`messages:${matchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          setMessages((prev) => {
+            const withoutTemp = prev.filter(
+              (m) =>
+                !(
+                  m.id?.toString().startsWith("temp-") &&
+                  m.sender_id === newMsg.sender_id &&
+                  m.text === newMsg.text
+                )
+            );
+            if (withoutTemp.some((m) => m.id === newMsg.id)) return withoutTemp;
+            return [...withoutTemp, newMsg];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [matchId]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
@@ -53,59 +70,27 @@ export default function ChatScreen({ match, matchId, userId, onBack, messages: d
   const send = async (e) => {
     e?.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || !user || sending) return;
     setText("");
+    setSending(true);
 
-    if (useSupabase) {
-      setSending(true);
-      // Añade optimistamente
-      const optimistic = {
-        id: `opt-${Date.now()}`,
-        sender_id: userId,
-        text: trimmed,
-        created_at: new Date().toISOString(),
-      };
-      setDbMessages((prev) => [...prev, optimistic]);
+    const tempMsg = {
+      id: `temp-${Date.now()}`,
+      match_id: matchId,
+      sender_id: user.id,
+      text: trimmed,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempMsg]);
 
-      try {
-        const saved = await sendMessage(matchId, userId, trimmed);
-        setDbMessages((prev) =>
-          prev.map((m) => (m.id === optimistic.id ? saved : m))
-        );
-        // Notificar al otro usuario
-        if (match.ownerId) {
-          notifyUser(
-            match.ownerId,
-            match.owner,
-            trimmed.length > 60 ? trimmed.slice(0, 57) + "..." : trimmed,
-            "/?tab=chats"
-          );
-        }
-      } catch (err) {
-        console.error(err);
-        // Revierte el mensaje optimista en caso de error
-        setDbMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-        setText(trimmed);
-      } finally {
-        setSending(false);
-      }
-    } else {
-      // Demo mode
-      demoSend?.(trimmed);
-    }
+    await supabase.from("messages").insert({
+      match_id: matchId,
+      sender_id: user.id,
+      text: trimmed,
+    });
+
+    setSending(false);
   };
-
-  // Normaliza mensajes a formato display
-  const displayMessages = useSupabase
-    ? dbMessages.map((m) => ({
-        mine: m.sender_id === userId,
-        text: m.text,
-        time: new Date(m.created_at).toLocaleTimeString("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      }))
-    : messages;
 
   return (
     <div className="fixed inset-0 z-30 bg-background flex flex-col">
@@ -119,7 +104,7 @@ export default function ChatScreen({ match, matchId, userId, onBack, messages: d
         </button>
         <div
           className="w-11 h-11 rounded-full bg-cover bg-center border-2 border-brand-green shadow"
-          style={{ backgroundImage: `url('${match.photos[0]}')` }}
+          style={{ backgroundImage: `url('${match.photos?.[0]}')` }}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -144,22 +129,28 @@ export default function ChatScreen({ match, matchId, userId, onBack, messages: d
           Trueque propuesto
         </p>
         <p className="text-sm">
-          <b>{match.title}</b>{" "}
-          <span className="text-foreground/60">por</span>{" "}
+          <b>{match.title}</b> <span className="text-foreground/60">por</span>{" "}
           <b>{match.wants}</b>
         </p>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {displayMessages.length === 0 && (
+        {messages.length === 0 && (
           <div className="text-center py-12 text-foreground/50 text-sm">
             <p className="mb-2 text-2xl">🤝</p>
-            <p>Has hecho match con <b>{match.owner}</b>.</p>
+            <p>
+              Has hecho match con <b>{match.owner}</b>.
+            </p>
             <p className="mt-1">¡Rompe el hielo!</p>
           </div>
         )}
-        {displayMessages.map((m, i) => (
-          <Bubble key={i} mine={m.mine} text={m.text} time={m.time} />
+        {messages.map((m) => (
+          <Bubble
+            key={m.id}
+            mine={m.sender_id === user?.id}
+            text={m.text}
+            time={formatTime(m.created_at)}
+          />
         ))}
       </div>
 
@@ -207,8 +198,4 @@ function Bubble({ mine, text, time }) {
       </div>
     </div>
   );
-}
-
-export function pickAutoReply() {
-  return AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)];
 }

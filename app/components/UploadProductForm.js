@@ -1,20 +1,40 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { saveProduct } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
 const CATEGORIES = [
-  "Móvil", "Consola", "Portátil", "Tablet",
-  "Cámara", "Movilidad", "Ropa", "Hogar", "Otro",
+  "Móvil",
+  "Consola",
+  "Portátil",
+  "Tablet",
+  "Cámara",
+  "Movilidad",
+  "Ropa",
+  "Hogar",
+  "Otro",
 ];
 
 const MADRID_NEIGHBORHOODS = [
-  "Centro", "Chamberí", "Salamanca", "Retiro", "Malasaña",
-  "Lavapiés", "Moncloa", "Chamartín", "Tetuán", "Latina",
-  "Carabanchel", "Vallecas", "Hortaleza",
+  "Centro",
+  "Chamberí",
+  "Salamanca",
+  "Retiro",
+  "Malasaña",
+  "Lavapiés",
+  "Moncloa",
+  "Chamartín",
+  "Tetuán",
+  "Latina",
+  "Carabanchel",
+  "Vallecas",
+  "Hortaleza",
 ];
 
-export default function UploadProductForm({ onClose, onSave, userId }) {
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB
+
+export default function UploadProductForm({ onClose, onSave }) {
   const [title, setTitle] = useState("");
   const [storage, setStorage] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
@@ -22,67 +42,85 @@ export default function UploadProductForm({ onClose, onSave, userId }) {
   const [wants, setWants] = useState("");
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
-  // Cada foto: { preview: "data:...", file: File }
-  const [photos, setPhotos] = useState([]);
-  const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState([]); // { file: File, preview: string }[]
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const fileRef = useRef(null);
+  const { user } = useAuth();
+  const supabase = getSupabase();
 
   const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
     const remaining = 5 - photos.length;
-    files.slice(0, remaining).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) =>
-        setPhotos((p) => [...p, { preview: ev.target.result, file }]);
-      reader.readAsDataURL(file);
-    });
+    const toAdd = [];
+    for (const file of files.slice(0, remaining)) {
+      if (file.size > MAX_PHOTO_BYTES) {
+        setError(`"${file.name}" supera el límite de 10 MB por foto.`);
+        continue;
+      }
+      toAdd.push({ file, preview: URL.createObjectURL(file) });
+    }
+    setPhotos((p) => [...p, ...toAdd]);
     e.target.value = "";
   };
 
-  const removePhoto = (idx) => setPhotos((p) => p.filter((_, i) => i !== idx));
+  const removePhoto = (idx) => {
+    setPhotos((p) => {
+      URL.revokeObjectURL(p[idx].preview);
+      return p.filter((_, i) => i !== idx);
+    });
+  };
 
   const isValid = title.trim() && wants.trim() && photos.length > 0;
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!isValid || saving) return;
+    if (!isValid || !user) return;
+    setLoading(true);
     setError(null);
-    setSaving(true);
 
     try {
-      const form = {
-        title: title.trim(),
-        storage: storage.trim(),
-        category,
-        neighborhood,
-        wants: wants.trim(),
-        description: description.trim(),
-        tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
-      };
-
-      if (userId) {
-        // Sube a Supabase Storage y guarda en BD
-        const photoFiles = photos.map((p) => p.file);
-        const saved = await saveProduct(userId, form, photoFiles);
-        onSave(saved);
-      } else {
-        // Demo mode sin auth: usa las previews locales
-        onSave({
-          id: Date.now(),
-          ...form,
-          owner: "Tú",
-          location: `Madrid · ${neighborhood}`,
-          distance: "0 km",
-          photos: photos.map((p) => p.preview),
-          isMine: true,
-          createdAt: Date.now(),
-        });
+      const photoUrls = [];
+      for (let i = 0; i < photos.length; i++) {
+        const { file } = photos[i];
+        const path = `${user.id}/${Date.now()}_${i}`;
+        const { error: uploadError } = await supabase.storage
+          .from("product-photos")
+          .upload(path, file, { upsert: false });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from("product-photos")
+          .getPublicUrl(path);
+        photoUrls.push(urlData.publicUrl);
       }
+
+      const { data: product, error: insertError } = await supabase
+        .from("products")
+        .insert({
+          title: title.trim(),
+          storage_detail: storage.trim() || null,
+          category,
+          neighborhood,
+          wants: wants.trim(),
+          description: description.trim() || null,
+          tags: tagsInput
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          photos: photoUrls,
+          owner_id: user.id,
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      onSave(product);
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Error al publicar el producto");
-      setSaving(false);
+      setError(err.message || "Error al publicar el producto. Inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,16 +141,22 @@ export default function UploadProductForm({ onClose, onSave, userId }) {
           <button
             type="submit"
             form="upload-form"
-            disabled={!isValid || saving}
+            disabled={!isValid || loading}
             className={`text-sm font-bold ${
-              isValid && !saving
+              isValid && !loading
                 ? "bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent"
                 : "text-foreground/30"
             }`}
           >
-            {saving ? "..." : "Publicar"}
+            {loading ? "Subiendo…" : "Publicar"}
           </button>
         </div>
+
+        {error && (
+          <div className="mx-5 mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
 
         <form id="upload-form" onSubmit={submit} className="px-5 py-5 space-y-5">
           <Section label="Fotos" hint={`${photos.length}/5 · La primera será la principal`}>
@@ -156,27 +200,48 @@ export default function UploadProductForm({ onClose, onSave, userId }) {
           </Section>
 
           <Section label="Título">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: iPhone 13 Pro" maxLength={40} required />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: iPhone 13 Pro"
+              maxLength={40}
+              required
+            />
           </Section>
 
           <Section label="Detalle (opcional)">
-            <Input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="Ej: 256GB · Negro" maxLength={40} />
+            <Input
+              value={storage}
+              onChange={(e) => setStorage(e.target.value)}
+              placeholder="Ej: 256GB · Negro"
+              maxLength={40}
+            />
           </Section>
 
           <Section label="Categoría">
             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </Select>
           </Section>
 
           <Section label="Tu barrio">
             <Select value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>
-              {MADRID_NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
+              {MADRID_NEIGHBORHOODS.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
             </Select>
           </Section>
 
           <Section label="Lo cambias por" hint="Sé concreto: más matches">
-            <Input value={wants} onChange={(e) => setWants(e.target.value)} placeholder="Ej: PS5 + diferencia" maxLength={60} required />
+            <Input
+              value={wants}
+              onChange={(e) => setWants(e.target.value)}
+              placeholder="Ej: PS5 + diferencia"
+              maxLength={60}
+              required
+            />
           </Section>
 
           <Section label="Descripción">
@@ -187,30 +252,34 @@ export default function UploadProductForm({ onClose, onSave, userId }) {
               maxLength={250}
               rows={4}
             />
-            <p className="text-[11px] text-foreground/40 text-right mt-1">{description.length}/250</p>
+            <p className="text-[11px] text-foreground/40 text-right mt-1">
+              {description.length}/250
+            </p>
           </Section>
 
           <Section label="Etiquetas" hint="Separadas por comas">
-            <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="Sin golpes, Factura, Caja original" />
+            <Input
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Sin golpes, Factura, Caja original"
+            />
           </Section>
-
-          {error && (
-            <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-              {error}
-            </div>
-          )}
 
           <div className="pt-2 pb-6">
             <button
               type="submit"
-              disabled={!isValid || saving}
+              disabled={!isValid || loading}
               className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transition ${
-                isValid && !saving
+                isValid && !loading
                   ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.02]"
                   : "bg-foreground/20 cursor-not-allowed"
               }`}
             >
-              {saving ? "Subiendo..." : isValid ? "Publicar producto" : "Completa los campos obligatorios"}
+              {loading
+                ? "Publicando…"
+                : isValid
+                ? "Publicar producto"
+                : "Completa los campos obligatorios"}
             </button>
           </div>
         </form>
@@ -223,7 +292,9 @@ function Section({ label, hint, children }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">{label}</label>
+        <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">
+          {label}
+        </label>
         {hint && <span className="text-[11px] text-foreground/40">{hint}</span>}
       </div>
       {children}
