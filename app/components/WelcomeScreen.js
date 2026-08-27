@@ -11,108 +11,102 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ background: "linear-gradient(160deg,#0d1f1a 0%,#0a1612 50%,#091410 100%)" }}>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#0a0e0c" }}>
 
-      {/* Logo */}
+      {/* ===== HERO: Dos personas grandes a pantalla completa ===== */}
       <div
-        className="relative z-10 flex items-center justify-between px-5 pt-12 pb-2 flex-shrink-0"
-        style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.5s ease" }}
+        className="relative flex-none"
+        style={{ height: "64vh", opacity: loaded ? 1 : 0, transition: "opacity 0.7s ease" }}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#0ea5e9)" }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+        {/* Foto izquierda — Carlos */}
+        <div className="absolute top-0 left-0 bottom-0" style={{ width: "50%" }}>
+          <img
+            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop&crop=top"
+            alt="Carlos"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to right, transparent 60%, rgba(10,14,12,0.6) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 55%, rgba(0,0,0,0.9) 100%)" }} />
+          <div className="absolute bottom-4 left-3 right-2">
+            <p className="text-white font-black text-base leading-tight">Carlos, 28</p>
+            <p className="text-white/55 text-xs mb-2">Madrid</p>
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl" style={{ background: "rgba(16,185,129,0.25)", border: "1px solid rgba(16,185,129,0.5)", backdropFilter: "blur(8px)" }}>
+              <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=60&h=60&fit=crop" alt="iPhone" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+              <div>
+                <p className="text-white text-xs font-bold leading-none">iPhone 14 Pro</p>
+                <p className="text-green-400 text-xs">ofrece →</p>
+              </div>
+            </div>
           </div>
-          <span className="text-white font-black text-xl tracking-tight">Truekly</span>
         </div>
-        <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.35)", color: "#6ee7b7" }}>📍 Madrid</span>
-      </div>
 
-      {/* Cards stack — hero */}
-      <div
-        className="relative z-10 flex-1 flex items-center justify-center"
-        style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.5s ease 0.1s" }}
-      >
-        <div className="relative w-64" style={{ height: 360 }}>
-
-          {/* Card trasera — Lucía */}
-          <div
-            className="absolute inset-0 rounded-3xl overflow-hidden"
-            style={{
-              transform: loaded ? "rotate(-7deg) translateX(-18px) translateY(8px)" : "rotate(-7deg) translateX(-18px) translateY(40px)",
-              transition: "transform 0.7s cubic-bezier(0.34,1.2,0.64,1) 0.2s",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
-            }}
-          >
-            <img
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop&crop=top"
-              alt="Lucía"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.9) 100%)" }} />
-            <div className="absolute bottom-4 left-4 right-4">
-              <p className="text-white font-black text-lg">Lucía, 25</p>
-              <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-xl" style={{ background: "rgba(56,189,248,0.2)", border: "1px solid rgba(56,189,248,0.4)" }}>
-                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=50&h=50&fit=crop" alt="Nike" className="w-7 h-7 rounded-lg object-cover" />
-                <span className="text-white text-xs font-bold">Nike Air Max 90</span>
+        {/* Foto derecha — Lucía */}
+        <div className="absolute top-0 right-0 bottom-0" style={{ width: "50%" }}>
+          <img
+            src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=800&fit=crop&crop=top"
+            alt="Lucía"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to left, transparent 60%, rgba(10,14,12,0.6) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 30%, transparent 55%, rgba(0,0,0,0.9) 100%)" }} />
+          <div className="absolute bottom-4 left-2 right-3">
+            <p className="text-white font-black text-base leading-tight">Lucía, 25</p>
+            <p className="text-white/55 text-xs mb-2">Vallecas</p>
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl" style={{ background: "rgba(56,189,248,0.25)", border: "1px solid rgba(56,189,248,0.5)", backdropFilter: "blur(8px)" }}>
+              <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=60&h=60&fit=crop" alt="Nike" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+              <div>
+                <p className="text-white text-xs font-bold leading-none">Nike Air Max</p>
+                <p className="text-blue-400 text-xs">← ofrece</p>
               </div>
             </div>
-            <div className="absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold" style={{ background: "rgba(56,189,248,0.3)", color: "#bae6fd" }}>ofrece</div>
           </div>
+        </div>
 
-          {/* Card delantera — Carlos */}
-          <div
-            className="absolute inset-0 rounded-3xl overflow-hidden"
-            style={{
-              transform: loaded ? "rotate(5deg) translateX(14px) translateY(-6px)" : "rotate(5deg) translateX(14px) translateY(40px)",
-              transition: "transform 0.7s cubic-bezier(0.34,1.2,0.64,1) 0.35s",
-              boxShadow: "0 24px 70px rgba(0,0,0,0.7)",
-            }}
-          >
-            <img
-              src="https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=400&h=600&fit=crop&crop=top"
-              alt="Carlos"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.9) 100%)" }} />
-            <div className="absolute bottom-4 left-4 right-4">
-              <p className="text-white font-black text-lg">Carlos, 28</p>
-              <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-xl" style={{ background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.4)" }}>
-                <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=50&h=50&fit=crop" alt="iPhone" className="w-7 h-7 rounded-lg object-cover" />
-                <span className="text-white text-xs font-bold">iPhone 14 Pro</span>
-              </div>
+        {/* Logo */}
+        <div
+          className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-12"
+          style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.5s ease 0.3s" }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#10b981,#0ea5e9)", boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-            <div className="absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-bold" style={{ background: "rgba(16,185,129,0.3)", color: "#6ee7b7" }}>ofrece</div>
+            <span className="text-white font-black text-lg" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>Truekly</span>
           </div>
+          <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.2)", color: "white", backdropFilter: "blur(8px)" }}>📍 Madrid</span>
+        </div>
 
-          {/* Match badge flotante */}
+        {/* Icono intercambio centro */}
+        <div
+          className="absolute left-1/2 flex items-center justify-center"
+          style={{
+            top: "50%",
+            transform: loaded ? "translate(-50%,-50%) scale(1)" : "translate(-50%,-50%) scale(0)",
+            transition: "transform 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.5s",
+          }}
+        >
           <div
-            className="absolute flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+            className="w-12 h-12 rounded-full flex items-center justify-center"
             style={{
-              bottom: -18,
-              left: "50%",
-              transform: loaded ? "translateX(-50%) scale(1)" : "translateX(-50%) scale(0)",
-              transition: "transform 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.6s",
               background: "linear-gradient(135deg,#10b981,#059669)",
-              boxShadow: "0 6px 24px rgba(16,185,129,0.6)",
-              zIndex: 20,
+              boxShadow: "0 0 0 4px rgba(10,14,12,0.8), 0 6px 24px rgba(16,185,129,0.7)",
             }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="text-white text-xs font-black">¡MATCH!</span>
           </div>
         </div>
       </div>
 
-      {/* Texto y botones */}
+      {/* ===== BOTTOM ===== */}
       <div
-        className="relative z-10 px-6 pb-10 pt-8 flex-shrink-0"
-        style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(20px)", transition: "all 0.6s ease 0.4s" }}
+        className="flex-1 flex flex-col justify-center px-6 pb-8 pt-4"
+        style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(16px)", transition: "all 0.6s ease 0.35s" }}
       >
-        <h1 className="text-white font-black leading-tight mb-1" style={{ fontSize: "1.85rem" }}>
+        <h1 className="text-white font-black leading-tight mb-1.5" style={{ fontSize: "1.9rem" }}>
           Intercambia lo que tienes{" "}
           <span style={{ background: "linear-gradient(90deg,#10b981,#38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             por lo que quieres.
