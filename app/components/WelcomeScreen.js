@@ -24,7 +24,7 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
         <div className="absolute bottom-0 left-0 right-0" style={{ height: "30%", background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))" }} />
         <div className="absolute top-0 left-0 right-0" style={{ height: "35%", background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
 
-        {/* LOGO CENTRADO SOBRE LA FOTO */}
+        {/* LOGO CENTRADO */}
         <div
           className="absolute top-0 left-0 right-0 flex flex-col items-center"
           style={{ paddingTop: "14%", opacity: loaded ? 1 : 0, transition: "opacity 0.6s ease 0.3s" }}
@@ -57,10 +57,10 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
           </div>
           <div className="flex items-center gap-2 px-3 py-2 rounded-2xl" style={{ background: "rgba(255,255,255,0.92)", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
             <div>
-              <p className="text-gray-900 text-xs font-black leading-none">Nike Air</p>
-              <p className="text-blue-500 text-xs font-semibold">← ofrece</p>
+              <p className="text-gray-900 text-xs font-black leading-none">Samsung S24 Ultra</p>
+              <p className="text-blue-500 text-xs font-semibold">ofrece →</p>
             </div>
-            <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=60&h=60&fit=crop" alt="Nike" className="w-8 h-8 rounded-lg object-cover" />
+            <img src="https://images.unsplash.com/photo-1567581935884-3349723552ca?w=60&h=60&fit=crop" alt="Samsung" className="w-8 h-8 rounded-lg object-cover" />
           </div>
         </div>
       </div>
