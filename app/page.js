@@ -17,6 +17,7 @@ import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
 import MatchModal from "./components/MatchModal";
 import WelcomeScreen from "./components/WelcomeScreen";
+import AnnouncementBanner from "./components/AnnouncementBanner";
 import { useAuth } from "./context/AuthContext";
 import { getSupabase } from "@/lib/supabase";
 
@@ -364,6 +365,7 @@ function HomeInner() {
       <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
         {activeTab === "discover" && (
           <>
+            <AnnouncementBanner onSlideClick={() => {}} />
             {loaded && myProducts.length === 0 && (
               <button
                 onClick={() => setShowUpload(true)}
