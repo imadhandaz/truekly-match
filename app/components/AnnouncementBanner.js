@@ -5,6 +5,12 @@ const slides = [
   { gradient: "linear-gradient(135deg,#f59e0b 0%,#f97316 100%)", emoji: "👟", tag: "MÁS BUSCADO", title: "+200 zapatillas", subtitle: "Nike, Adidas, New Balance... ¡truekéalas ya!" },
   { gradient: "linear-gradient(135deg,#8b5cf6 0%,#ec4899 100%)", emoji: "🔥", tag: "TOP TRUEKES", title: "PS5 · MacBook · GoPro", subtitle: "Los más pedidos en Madrid ahora mismo" },
   { gradient: "linear-gradient(135deg,#0f766e 0%,#0891b2 100%)", emoji: "✅", tag: "100% SEGURO", title: "Perfiles verificados", subtitle: "Intercambia con total confianza" },
+  { gradient: "linear-gradient(135deg,#dc2626 0%,#7c3aed 100%)", emoji: "🎮", tag: "GAMING", title: "Consolas y videojuegos", subtitle: "Switch, Xbox, PS5 y juegos en busca de dueño" },
+  { gradient: "linear-gradient(135deg,#db2777 0%,#f59e0b 100%)", emoji: "👗", tag: "MODA", title: "Ropa de marca sin usar", subtitle: "Zara, Pull&Bear, Mango... ¡truekealo!" },
+  { gradient: "linear-gradient(135deg,#1d4ed8 0%,#6d28d9 100%)", emoji: "📸", tag: "FOTOGRAFÍA", title: "Cámaras y objetivos", subtitle: "Sony, Canon, GoPro · drones incluidos" },
+  { gradient: "linear-gradient(135deg,#065f46 0%,#1e40af 100%)", emoji: "🎵", tag: "MÚSICA", title: "Guitarras y auriculares", subtitle: "Fender, Gibson, Sony WH... ¡ponles precio con trueque!" },
+  { gradient: "linear-gradient(135deg,#92400e 0%,#b45309 100%)", emoji: "🚴", tag: "DEPORTE", title: "Material deportivo", subtitle: "Bicis, pesas, ropa técnica... intercambia ya" },
+  { gradient: "linear-gradient(135deg,#0369a1 0%,#0f766e 100%)", emoji: "🏠", tag: "HOGAR", title: "Deco y electrohogar", subtitle: "Lámparas, plantas, Air Fryers y mucho más" },
 ];
 export default function AnnouncementBanner({ onSlideClick }) {
   const [current, setCurrent] = useState(0);
@@ -32,8 +38,8 @@ export default function AnnouncementBanner({ onSlideClick }) {
           </div>
           <span style={{ color:"rgba(255,255,255,0.7)", fontSize:20, flexShrink:0 }}>›</span>
         </div>
-        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-          {slides.map((_, i) => (<span key={i} style={{ display:"inline-block", width: i===current ? 20 : 6, height:6, borderRadius:3, background: i===current ? "white" : "rgba(255,255,255,0.4)", transition:"all 0.3s ease" }} />))}
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1">
+          {slides.map((_, i) => (<span key={i} style={{ display:"inline-block", width: i===current ? 16 : 5, height:5, borderRadius:3, background: i===current ? "white" : "rgba(255,255,255,0.35)", transition:"all 0.3s ease" }} />))}
         </div>
       </button>
     </div>
