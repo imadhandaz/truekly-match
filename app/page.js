@@ -41,7 +41,7 @@ function shapeProduct(p) {
     wants: p.wants || "",
     description: p.description || "",
     tags: p.tags || [],
-    location: `Madrid · ${p.neighborhood || ""}`,
+    location: p.neighborhood || "España",
     neighborhood: p.neighborhood || "",
   };
 }
