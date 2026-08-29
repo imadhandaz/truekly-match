@@ -317,10 +317,10 @@ function HomeInner() {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
-      <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
+      <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-white/80 border-b border-black/5">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-blue/30">
-            T
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg" style={{background:"linear-gradient(135deg,#10b981,#0ea5e9)",boxShadow:"0 4px 16px rgba(14,165,233,0.35)"}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
           <div>
             <h1 className="font-black text-lg leading-none bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
@@ -362,7 +362,7 @@ function HomeInner() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12" style={{background:"linear-gradient(180deg,rgba(16,185,129,0.035) 0%,rgba(14,165,233,0.05) 100%)"}}>
         {activeTab === "discover" && (
           <>
             <AnnouncementBanner onSlideClick={() => {}} />
