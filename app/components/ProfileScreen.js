@@ -17,7 +17,7 @@ export default function ProfileScreen({
 }) {
   const displayName = profile?.display_name || (user?.email ? user.email.split("@")[0] : "Yo");
   const initial = displayName.charAt(0).toUpperCase();
-  const subtitle = user?.email || "Madrid · Miembro nuevo";
+  const subtitle = user?.email || "Miembro nuevo";
 
   return (
     <div className="w-full max-w-md">
