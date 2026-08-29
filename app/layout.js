@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   metadataBase: new URL("https://truekly-match.vercel.app"),
-  title: "Truekly Match — Trueque con match",
+  title: "Truekly Match â Trueque con match",
   description:
-    "Intercambia productos haciendo match. Móviles, consolas, bicis y más. Lo tuyo por lo suyo, en Madrid.",
+    "Intercambia productos haciendo match. MÃ³viles, consolas, bicis y mÃ¡s. Lo tuyo por lo suyo, donde estés.",
   applicationName: "Truekly Match",
-  keywords: ["trueque", "intercambio", "match", "wallapop", "segunda mano", "madrid"],
+  keywords: ["trueque", "intercambio", "match", "wallapop", "segunda mano", "global"],
   authors: [{ name: "Truekly Match" }],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -27,9 +27,9 @@ export const metadata = {
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "Truekly Match — Lo tuyo por lo suyo",
+    title: "Truekly Match â Lo tuyo por lo suyo",
     description:
-      "Intercambia productos haciendo match estilo Tinder. Madrid y más ciudades pronto.",
+      "Intercambia productos haciendo match estilo Tinder. Madrid y mÃ¡s ciudades pronto.",
     type: "website",
     locale: "es_ES",
     siteName: "Truekly Match",
