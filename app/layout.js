@@ -29,7 +29,7 @@ export const metadata = {
   openGraph: {
     title: "Truekly Match Ã¢ÂÂ Lo tuyo por lo suyo",
     description:
-      "Intercambia productos haciendo match estilo Tinder. Madrid y mÃÂ¡s ciudades pronto.",
+      "Intercambia productos haciendo match estilo Tinder. Intercambia en cualquier ciudad del mundo.",
     type: "website",
     locale: "es_ES",
     siteName: "Truekly Match",
