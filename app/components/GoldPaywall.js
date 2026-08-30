@@ -54,19 +54,11 @@ export default function GoldPaywall({ onClose, reason }) {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: selected,
-          userId: user?.id,
-          userEmail: user?.email,
-        }),
+        body: JSON.stringify({ planId: selected, userId: user?.id, userEmail: user?.email }),
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error("Stripe checkout error:", data.error);
-        setLoading(false);
-      }
+      if (data.url) { window.location.href = data.url; }
+      else { console.error("Stripe checkout error:", data.error); setLoading(false); }
     } catch (err) {
       console.error("Stripe checkout error:", err);
       setLoading(false);
@@ -75,16 +67,16 @@ export default function GoldPaywall({ onClose, reason }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md animate-fadeIn flex items-end sm:items-center justify-center sm:p-6">
-      <div className="bg-gradient-to-b from-yellow-50 via-white to-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[95vh] overflow-y-auto shadow-2xl">
+      <div className="w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[95vh] overflow-y-auto shadow-2xl bg-gradient-to-b from-yellow-50 via-white to-white dark:from-gray-900 dark:via-gray-950 dark:to-gray-950">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-foreground/70 flex items-center justify-center text-lg z-10 backdrop-blur"
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-foreground/70 flex items-center justify-center text-lg z-10 backdrop-blur"
           aria-label="Cerrar"
         >
           ✕
         </button>
 
-        <div className="px-6 pt-10 pb-4 text-center bg-gradient-to-b from-yellow-100/60 to-transparent">
+        <div className="px-6 pt-10 pb-4 text-center bg-gradient-to-b from-yellow-100/40 dark:from-yellow-900/20 to-transparent">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white font-black text-sm shadow-lg mb-4">
             ✨ TRUEKLY GOLD
           </div>
@@ -98,16 +90,14 @@ export default function GoldPaywall({ onClose, reason }) {
               Más trueques.
             </span>
           </h1>
-          {reason && (
-            <p className="text-sm text-foreground/60 italic">{reason}</p>
-          )}
+          {reason && <p className="text-sm text-foreground/60 italic">{reason}</p>}
         </div>
 
         <div className="px-6 pb-2 space-y-2.5">
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/70 border border-yellow-100"
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/70 dark:bg-white/5 border border-yellow-100 dark:border-yellow-900/30"
             >
               <div className="text-2xl">{f.icon}</div>
               <div className="flex-1 min-w-0">
@@ -128,8 +118,8 @@ export default function GoldPaywall({ onClose, reason }) {
                 onClick={() => setSelected(p.id)}
                 className={`w-full p-4 rounded-2xl border-2 transition flex items-center justify-between text-left ${
                   isSelected
-                    ? "border-yellow-500 bg-yellow-50 shadow-lg"
-                    : "border-foreground/10 bg-white hover:border-yellow-200"
+                    ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/25 shadow-lg"
+                    : "border-foreground/10 bg-white dark:bg-white/5 hover:border-yellow-300 dark:hover:border-yellow-700"
                 }`}
               >
                 <div>
@@ -143,16 +133,12 @@ export default function GoldPaywall({ onClose, reason }) {
                   </div>
                   <p className="text-xs text-foreground/60">{p.full}</p>
                   {p.save && (
-                    <p className="text-[11px] font-bold text-brand-green-dark mt-0.5">
-                      {p.save}
-                    </p>
+                    <p className="text-[11px] font-bold text-brand-green-dark mt-0.5">{p.save}</p>
                   )}
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-black">{p.price}</p>
-                  <p className="text-[10px] text-foreground/50 uppercase tracking-wide">
-                    {p.subtitle}
-                  </p>
+                  <p className="text-[10px] text-foreground/50 uppercase tracking-wide">{p.subtitle}</p>
                 </div>
               </button>
             );
@@ -168,9 +154,7 @@ export default function GoldPaywall({ onClose, reason }) {
             {loading ? "Redirigiendo…" : "Empezar mi prueba gratis 3 días"}
           </button>
           <p className="text-center text-[11px] text-foreground/50 mt-3 leading-relaxed">
-            Después tu plan elegido se renueva automáticamente.
-            <br />
-            Cancela cuando quieras.
+            Después tu plan elegido se renueva automáticamente.<br />Cancela cuando quieras.
           </p>
         </div>
       </div>
