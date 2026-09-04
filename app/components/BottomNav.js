@@ -60,7 +60,7 @@ const tabs = [
   },
 ];
 
-export default function BottomNav({ active = "discover", onChange, matchCount = 0, likesCount = 0 }) {
+export default function BottomNav({ active = "discover", onChange, matchCount = 0, likesCount = 0, unreadChats = 0 }) {
   return (
     <nav
       className="fixed left-0 right-0 z-30 flex justify-center"
@@ -158,6 +158,21 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
                   }}
                 >
                   {likesCount}
+                </span>
+              )}
+              {tab.id === "chats" && unreadChats > 0 && (
+                <span
+                  className="absolute flex items-center justify-center text-white font-black"
+                  style={{
+                    top: 4, right: 8,
+                    minWidth: 16, height: 16,
+                    borderRadius: 8,
+                    fontSize: 9,
+                    background: "linear-gradient(135deg,#3b82f6,#6366f1)",
+                    paddingInline: 3,
+                  }}
+                >
+                  {unreadChats > 9 ? "9+" : unreadChats}
                 </span>
               )}
             </button>

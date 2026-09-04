@@ -91,6 +91,7 @@ function HomeInner() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [unreadChats, setUnreadChats] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeCat, setActiveCat] = useState("Todo");
@@ -226,6 +227,22 @@ function HomeInner() {
       );
     }
   };
+
+  // Subscribe to new messages to track unread count
+  useEffect(() => {
+    if (!user || matches.length === 0) return;
+    const matchIds = new Set(matches.map((m) => m.id));
+    const ch = supabase
+      .channel("unread-msgs-" + user.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const msg = payload.new;
+        if (msg.sender_id !== user.id && matchIds.has(msg.match_id)) {
+          setUnreadChats((c) => c + 1);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id, matches.length]);
 
   const handleSwipe = async (product, choice) => {
     setSwipeCount((c) => c + 1);
@@ -481,9 +498,13 @@ function HomeInner() {
 
       <BottomNav
         active={activeTab}
-        onChange={setActiveTab}
+        onChange={(tab) => {
+          setActiveTab(tab);
+          if (tab === "chats") setUnreadChats(0);
+        }}
         matchCount={matches.length}
         likesCount={likes.length}
+        unreadChats={unreadChats}
       />
 
       {showUpload && (
