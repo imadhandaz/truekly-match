@@ -133,6 +133,22 @@ function Card({item,depth,yesOpacity=0,noOpacity=0,photoIdx=0,expanded=false}){
         <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{background:"rgba(255,255,255,0.1)",backdropFilter:"blur(20px)",border:"1px solid rgba(255,255,255,0.18)"}}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:"linear-gradient(135deg,#10b981,#059669)"}}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                const shareUrl = "https://truekly-match.vercel.app/p/" + item.id;
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  navigator.share({ title: item.title, text: "Mira este trueque", url: shareUrl });
+                } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+                  navigator.clipboard.writeText(shareUrl).then(() => alert("Link copiado!"));
+                }
+              }}
+              className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-xs text-white/80 hover:bg-white/25 transition"
+            >
+              Compartir
+            </button>
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-black uppercase tracking-wider mb-0.5" style={{fontSize:9,color:"#34d399"}}>Busca a cambio</p>
