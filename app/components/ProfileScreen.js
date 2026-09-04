@@ -14,6 +14,7 @@ export default function ProfileScreen({
   onSignOut,
   onSignIn,
   onDeleteAccount,
+  onEdit,
 }) {
   const displayName = profile?.display_name || (user?.email ? user.email.split("@")[0] : "Yo");
   const initial = displayName.charAt(0).toUpperCase();
@@ -43,6 +44,14 @@ export default function ProfileScreen({
           </div>
           <p className="text-sm text-foreground/60 truncate">{subtitle}</p>
         </div>
+        {user && onEdit && (
+          <button
+            onClick={onEdit}
+            className="flex-none px-3 py-1.5 rounded-full text-xs font-bold bg-foreground/8 hover:bg-foreground/15 border border-foreground/10 transition"
+          >
+            Editar
+          </button>
+        )}
       </div>
 
       {!user && (

@@ -15,6 +15,7 @@ import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
+import EditProfileModal from "./components/EditProfileModal";
 import MatchModal from "./components/MatchModal";
 import WelcomeScreen from "./components/WelcomeScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
@@ -89,6 +90,7 @@ function HomeInner() {
   const [authMode, setAuthMode] = useState("signin");
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeCat, setActiveCat] = useState("Todo");
@@ -472,6 +474,7 @@ function HomeInner() {
             onSignOut={signOut}
             onSignIn={() => setShowAuth(true)}
             onDeleteAccount={() => setShowDeleteAccount(true)}
+            onEdit={() => setShowEditProfile(true)}
           />
         )}
       </main>
@@ -538,6 +541,15 @@ function HomeInner() {
         <VerifyIdentityModal
           onClose={() => setShowVerify(false)}
           onVerified={() => setShowVerify(false)}
+        />
+      )}
+
+      {showEditProfile && user && (
+        <EditProfileModal
+          user={user}
+          profile={profile}
+          onClose={() => setShowEditProfile(false)}
+          onSaved={() => { setShowEditProfile(false); fetchAll(user.id); }}
         />
       )}
 
