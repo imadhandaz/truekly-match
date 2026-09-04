@@ -91,6 +91,7 @@ function HomeInner() {
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [activeCat, setActiveCat] = useState("Todo");
 
   const { user, profile, signOut } = useAuth();
   const supabase = getSupabase();
@@ -292,6 +293,7 @@ function HomeInner() {
   const parseKm = (s) => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
 
   const filteredProducts = products.filter((p) => {
+    if (activeCat !== "Todo" && p.category !== activeCat) return false;
     if (filters.cats.length > 0 && !filters.cats.includes(p.category)) return false;
     if (p.distance && parseKm(p.distance) > filters.maxKm) return false;
     if (filters.verifiedOnly && !p.verified) return false;
@@ -381,6 +383,7 @@ function HomeInner() {
         {activeTab === "discover" && (
           <>
             <AnnouncementBanner onSlideClick={() => {}} />
+            <CategoryTabs active={activeCat} onChange={setActiveCat} />
             {loaded && myProducts.length === 0 && (
               <button
                 onClick={() => setShowUpload(true)}
@@ -566,6 +569,44 @@ export default function Home() {
     <Suspense>
       <HomeInner />
     </Suspense>
+  );
+}
+
+const DISCOVER_CATS = [
+  { id: "Todo", emoji: "🌐", label: "Todo" },
+  { id: "Móvil", emoji: "📱", label: "Móviles" },
+  { id: "Consola", emoji: "🎮", label: "Consolas" },
+  { id: "Portátil", emoji: "💻", label: "Portátiles" },
+  { id: "Vehículo", emoji: "🚗", label: "Vehículos" },
+  { id: "Vivienda", emoji: "🏠", label: "Vivienda" },
+  { id: "Equipo", emoji: "⚽", label: "Equipos" },
+  { id: "Movilidad", emoji: "🛴", label: "Movilidad" },
+  { id: "Ropa", emoji: "👗", label: "Moda" },
+  { id: "Hogar", emoji: "🏡", label: "Hogar" },
+  { id: "Cámara", emoji: "📷", label: "Cámaras" },
+  { id: "Otro", emoji: "📦", label: "Otros" },
+];
+
+function CategoryTabs({ active, onChange }) {
+  return (
+    <div className="w-full max-w-sm mb-3 -mx-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1" style={{scrollbarWidth:"none"}}>
+        {DISCOVER_CATS.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => onChange(cat.id)}
+            className={`flex-none flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition ${
+              active === cat.id
+                ? "bg-brand-green text-white shadow-lg"
+                : "bg-foreground/5 text-foreground/70 hover:bg-foreground/10"
+            }`}
+          >
+            <span className="text-base">{cat.emoji}</span>
+            <span className="text-[9px] font-bold whitespace-nowrap">{cat.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
