@@ -50,6 +50,15 @@ export default function ChatScreen({ match, onBack }) {
     const tempMsg = { id: `temp-${Date.now()}`, match_id: matchId, sender_id: user.id, text: trimmed, created_at: new Date().toISOString() };
     setMessages((prev) => [...prev, tempMsg]);
     await supabase.from("messages").insert({ match_id: matchId, sender_id: user.id, text: trimmed });
+
+    // Push notification to the other user
+    if (match?.other_user_id) {
+      fetch("/api/push/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: match.other_user_id, title: "Nuevo mensaje \u{1F4AC}", body: trimmed.slice(0, 80), url: "/" }),
+      }).catch(() => {});
+    }
     setSending(false);
   };
 

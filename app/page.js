@@ -66,6 +66,7 @@ function shapeMatch(match, userId) {
     verified: ownerProfile.verified || false,
     location: product.neighborhood || "Espa�a",
     neighborhood: product.neighborhood || "",
+    other_user_id: isUserA ? match.user_b : match.user_a,
   };
 }
 
@@ -284,6 +285,18 @@ function HomeInner() {
 
         // Show match modal
         setMatchModalCard({ ...product, matchId: newMatch?.id });
+
+        // Push notification to the matched user
+        fetch("/api/push/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: product.owner_id,
+            title: "\u{1F91D} \u{00A1}Nuevo match en Truekly!",
+            body: (profile?.display_name || "Alguien") + " quiere hacer un trueque contigo",
+            url: "/",
+          }),
+        }).catch(() => {});
       }
     }
   };
