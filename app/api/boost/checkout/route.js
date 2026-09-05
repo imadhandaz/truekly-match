@@ -3,12 +3,10 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Create one-time price products in your Stripe dashboard and set these env vars:
-// STRIPE_PRICE_BOOST_3  → price ID for 3-boost pack
-// STRIPE_PRICE_BOOST_10 → price ID for 10-boost pack
+// No Stripe product setup needed — prices are defined inline
 const PACK_MAP = {
-  boost3:  { priceId: process.env.STRIPE_PRICE_BOOST_3,  credits: 3  },
-  boost10: { priceId: process.env.STRIPE_PRICE_BOOST_10, credits: 10 },
+  boost3:  { credits: 3,  amount: 99,  name: "3 Boosts · Truekly Match"  },
+  boost10: { credits: 10, amount: 299, name: "10 Boosts · Truekly Match" },
 };
 
 export async function POST(request) {
@@ -27,17 +25,24 @@ export async function POST(request) {
 
   const { packId } = await request.json().catch(() => ({}));
   const pack = PACK_MAP[packId];
+  if (!pack) return Response.json({ error: "Pack no válido" }, { status: 400 });
 
-  if (!pack?.priceId) {
-    return Response.json({ error: "Pack no configurado — añade STRIPE_PRICE_BOOST_3 y STRIPE_PRICE_BOOST_10 en Vercel" }, { status: 400 });
-  }
-
-  const appUrl = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://truekly-match.vercel.app";
+  const appUrl =
+    request.headers.get("origin") ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://truekly-match.vercel.app";
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
-    line_items: [{ price: pack.priceId, quantity: 1 }],
+    line_items: [{
+      quantity: 1,
+      price_data: {
+        currency: "eur",
+        unit_amount: pack.amount,
+        product_data: { name: pack.name },
+      },
+    }],
     customer_email: user.email,
     client_reference_id: user.id,
     metadata: { userId: user.id, boostCredits: String(pack.credits) },
