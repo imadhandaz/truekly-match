@@ -53,7 +53,7 @@ body {
   overscroll-behavior: none;
 }
 
-/* ── Dark mode: componentes con bg-white hardcodeado ── */
+/* ââ Dark mode: componentes con bg-white hardcodeado ââ */
 .dark .bg-white {
   background-color: var(--surface-raised) !important;
 }
@@ -67,7 +67,7 @@ body {
   border-color: rgba(52,211,153,0.08) !important;
 }
 
-/* ── Animaciones ──────────────────────────────────────────── */
+/* ââ Animaciones ââââââââââââââââââââââââââââââââââââââââââââ */
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
