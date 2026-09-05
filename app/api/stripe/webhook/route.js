@@ -25,11 +25,15 @@ export async function POST(request) {
     case "checkout.session.completed": {
       const session = event.data.object;
       const userId = session.metadata?.userId;
+      const boostCredits = parseInt(session.metadata?.boostCredits || "0");
       if (userId) {
-        await supabase
-          .from("profiles")
-          .update({ gold: true })
-          .eq("id", userId);
+        if (session.mode === "subscription") {
+          await supabase.from("profiles").update({ gold: true, boost_credits: 3 }).eq("id", userId);
+        } else if (boostCredits > 0) {
+          const { data: prof } = await supabase.from("profiles").select("boost_credits").eq("id", userId).maybeSingle();
+          const current = prof?.boost_credits || 0;
+          await supabase.from("profiles").update({ boost_credits: current + boostCredits }).eq("id", userId);
+        }
       }
       break;
     }

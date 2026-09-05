@@ -17,6 +17,7 @@ import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
 import EditProfileModal from "./components/EditProfileModal";
 import MatchModal from "./components/MatchModal";
+import BuyBoostsModal from "./components/BuyBoostsModal";
 import WelcomeScreen from "./components/WelcomeScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
 import AnnouncementBanner from "./components/AnnouncementBanner";
@@ -44,7 +45,7 @@ function shapeProduct(p) {
     wants: p.wants || "",
     description: p.description || "",
     tags: p.tags || [],
-    location: p.neighborhood || "EspaÃ±a",
+    location: p.neighborhood || "EspaÃÂ±a",
     neighborhood: p.neighborhood || "",
   };
 }
@@ -64,7 +65,7 @@ function shapeMatch(match, userId) {
     wants: product.wants || "",
     owner: ownerProfile.display_name || ownerProfile.username || "Usuario",
     verified: ownerProfile.verified || false,
-    location: product.neighborhood || "Espaï¿½a",
+    location: product.neighborhood || "EspaÃ¯Â¿Â½a",
     neighborhood: product.neighborhood || "",
     other_user_id: isUserA ? match.user_b : match.user_a,
   };
@@ -96,6 +97,7 @@ function HomeInner() {
   const [loaded, setLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [showBuyBoosts, setShowBuyBoosts] = useState(false);
   const [activeCat, setActiveCat] = useState("Todo");
 
   const { user, profile, signOut } = useAuth();
@@ -133,8 +135,13 @@ function HomeInner() {
   // Handle ?gold=success after Stripe redirect
   useEffect(() => {
     if (searchParams.get("gold") === "success") {
-      alert("Â¡Ya eres Gold! â¨ Disfruta de todos los beneficios.");
+      alert("ÃÂ¡Ya eres Gold! Ã¢ÂÂ¨ Disfruta de todos los beneficios.");
       router.replace("/");
+    if (searchParams.get("boosts") === "success") {
+      const n = searchParams.get("n") || "3";
+      alert(`${n} boosts añadidos! 🚀`);
+      router.replace("/");
+    }
     }
   }, [searchParams, router]);
 
@@ -338,6 +345,18 @@ function HomeInner() {
     setShowGold(true);
   };
 
+  const handleBoost = async (product) => {
+    if (!user) { setShowAuth(true); return; }
+    if (!isGold) { openGold("El Boost es exclusivo de Truekly Gold"); return; }
+    const credits = profile?.boost_credits ?? 0;
+    if (credits <= 0) { setShowBuyBoosts(true); return; }
+    const now = new Date().toISOString();
+    await supabase.from("products").update({ boosted_at: now }).eq("id", product.id).eq("owner_id", user.id);
+    await supabase.from("profiles").update({ boost_credits: credits - 1 }).eq("id", user.id);
+    setMyProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, boosted_at: now } : p));
+    import("@/lib/toast").then(({ toast }) => toast("🚀 ¡Producto boosteado al top del deck!"));
+  };
+
   const parseKm = (s) => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
 
   const filteredProducts = products.filter((p) => {
@@ -410,12 +429,12 @@ function HomeInner() {
               onClick={() => openGold("Hazte Gold")}
               className="px-3 py-1.5 rounded-full text-sm font-black bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-md hover:scale-105 transition flex items-center gap-1"
             >
-              <span>â¨</span>
+              <span>Ã¢ÂÂ¨</span>
               <span>Gold</span>
             </button>
           )}
           <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>
-            â
+            Ã¢ÂÂ
           </IconButton>
           <IconButton
             label="Subir producto"
@@ -437,7 +456,7 @@ function HomeInner() {
                 onClick={() => setShowUpload(true)}
                 className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
               >
-                <span className="text-3xl">ð¦</span>
+                <span className="text-3xl">Ã°ÂÂÂ¦</span>
                 <div className="flex-1">
                   <p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
                     Sube tu primer producto
@@ -446,22 +465,22 @@ function HomeInner() {
                     Es lo que vas a ofrecer en los trueques
                   </p>
                 </div>
-                <span className="text-brand-blue-dark text-xl">âº</span>
+                <span className="text-brand-blue-dark text-xl">Ã¢ÂÂº</span>
               </button>
             )}
             {filterActive && (
               <div className="w-full max-w-sm mb-4 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-between text-xs animate-fadeIn">
                 <span className="font-semibold text-brand-blue-dark">
                   {filters.cats.length > 0
-                    ? `${filters.cats.length} categorÃ­a${filters.cats.length > 1 ? "s" : ""}`
-                    : "Todas categorÃ­as"}{" "}
-                  Â· &lt;{filters.maxKm} km
+                    ? `${filters.cats.length} categorÃÂ­a${filters.cats.length > 1 ? "s" : ""}`
+                    : "Todas categorÃÂ­as"}{" "}
+                  ÃÂ· &lt;{filters.maxKm} km
                 </span>
                 <button
                   onClick={() => setFilters({ cats: [], maxKm: 50 })}
                   className="text-foreground/60 hover:text-foreground font-bold"
                 >
-                  Limpiar â
+                  Limpiar Ã¢ÂÂ
                 </button>
               </div>
             )}
@@ -470,7 +489,7 @@ function HomeInner() {
                 onClick={() => openGold("Te quedan pocos swipes hoy")}
                 className="w-full max-w-sm mb-4 p-3 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 flex items-center gap-3 hover:scale-[1.01] transition animate-fadeIn"
               >
-                <span className="text-xl">â¡</span>
+                <span className="text-xl">Ã¢ÂÂ¡</span>
                 <div className="flex-1 text-left">
                   <p className="text-xs font-bold text-foreground">
                     Te quedan <b>{remainingSwipes}</b> swipes hoy
@@ -479,7 +498,7 @@ function HomeInner() {
                     Hazte Gold para ilimitados
                   </p>
                 </div>
-                <span className="text-orange-500 font-bold">â</span>
+                <span className="text-orange-500 font-bold">Ã¢ÂÂ</span>
               </button>
             )}
             {loadingProducts ? (
@@ -500,7 +519,7 @@ function HomeInner() {
           <LikesYouScreen
             products={likes}
             isGold={isGold}
-            onUpgrade={() => openGold("Hazte Gold para ver quiÃ©n te ha dado like")}
+            onUpgrade={() => openGold("Hazte Gold para ver quiÃÂ©n te ha dado like")}
           />
         )}
         {activeTab === "matches" && (
@@ -561,9 +580,9 @@ function HomeInner() {
               ? {
                   title: myProducts[0].title,
                   photos: myProducts[0].photos,
-                  owner: profile?.display_name || "TÃº",
+                  owner: profile?.display_name || "TÃÂº",
                 }
-              : { title: "Tu producto", photos: [], owner: "TÃº" }
+              : { title: "Tu producto", photos: [], owner: "TÃÂº" }
           }
           theirProduct={matchModalCard}
           onClose={() => setMatchModalCard(null)}
@@ -614,6 +633,13 @@ function HomeInner() {
         <AuthModal onClose={() => setShowAuth(false)} mode={authMode} />
       )}
 
+      {showBuyBoosts && (
+        <BuyBoostsModal
+          currentCredits={profile?.boost_credits ?? 0}
+          onClose={() => setShowBuyBoosts(false)}
+        />
+      )}
+
       {showDeleteAccount && (
         <DeleteAccountModal
           onClose={() => setShowDeleteAccount(false)}
@@ -639,18 +665,18 @@ export default function Home() {
 }
 
 const DISCOVER_CATS = [
-  { id: "Todo", emoji: "ð", label: "Todo" },
-  { id: "MÃ³vil", emoji: "ð±", label: "MÃ³viles" },
-  { id: "Consola", emoji: "ð®", label: "Consolas" },
-  { id: "PortÃ¡til", emoji: "ð»", label: "PortÃ¡tiles" },
-  { id: "VehÃ­culo", emoji: "ð", label: "VehÃ­culos" },
-  { id: "Vivienda", emoji: "ð ", label: "Vivienda" },
-  { id: "Equipo", emoji: "â½", label: "Equipos" },
-  { id: "Movilidad", emoji: "ð´", label: "Movilidad" },
-  { id: "Ropa", emoji: "ð", label: "Moda" },
-  { id: "Hogar", emoji: "ð¡", label: "Hogar" },
-  { id: "CÃ¡mara", emoji: "ð·", label: "CÃ¡maras" },
-  { id: "Otro", emoji: "ð¦", label: "Otros" },
+  { id: "Todo", emoji: "Ã°ÂÂÂ", label: "Todo" },
+  { id: "MÃÂ³vil", emoji: "Ã°ÂÂÂ±", label: "MÃÂ³viles" },
+  { id: "Consola", emoji: "Ã°ÂÂÂ®", label: "Consolas" },
+  { id: "PortÃÂ¡til", emoji: "Ã°ÂÂÂ»", label: "PortÃÂ¡tiles" },
+  { id: "VehÃÂ­culo", emoji: "Ã°ÂÂÂ", label: "VehÃÂ­culos" },
+  { id: "Vivienda", emoji: "Ã°ÂÂÂ ", label: "Vivienda" },
+  { id: "Equipo", emoji: "Ã¢ÂÂ½", label: "Equipos" },
+  { id: "Movilidad", emoji: "Ã°ÂÂÂ´", label: "Movilidad" },
+  { id: "Ropa", emoji: "Ã°ÂÂÂ", label: "Moda" },
+  { id: "Hogar", emoji: "Ã°ÂÂÂ¡", label: "Hogar" },
+  { id: "CÃÂ¡mara", emoji: "Ã°ÂÂÂ·", label: "CÃÂ¡maras" },
+  { id: "Otro", emoji: "Ã°ÂÂÂ¦", label: "Otros" },
 ];
 
 function CategoryTabs({ active, onChange }) {
@@ -709,8 +735,8 @@ function MatchesList({ matches, onOpen }) {
   if (matches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20">
-        <div className="text-7xl mb-4 opacity-70">ð</div>
-        <h2 className="text-2xl font-bold mb-2">Sin matches todavÃ­a</h2>
+        <div className="text-7xl mb-4 opacity-70">Ã°ÂÂÂ</div>
+        <h2 className="text-2xl font-bold mb-2">Sin matches todavÃÂ­a</h2>
         <p className="text-foreground/60 max-w-xs">
           Sigue descubriendo productos para encontrar trueques
         </p>
@@ -736,7 +762,7 @@ function MatchesList({ matches, onOpen }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
-              ð¬
+              Ã°ÂÂÂ¬
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
               <p className="font-bold text-sm leading-tight">{m.title}</p>
