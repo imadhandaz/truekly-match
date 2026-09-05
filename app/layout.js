@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -57,6 +58,12 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Script
+          defer
+          data-domain="truekly-match.vercel.app"
+          src="https://plausible.io/js/script.js"
+          strategy="afterInteractive"
+        />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
