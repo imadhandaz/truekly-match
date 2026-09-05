@@ -48,7 +48,6 @@ html {
 body {
   background: transparent;
   position: relative;
-  z-index: 0;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
@@ -130,9 +129,14 @@ body {
 .full-bg {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 9998;
   pointer-events: none;
   overflow: hidden;
+  mix-blend-mode: multiply;
+}
+
+.dark .full-bg {
+  mix-blend-mode: screen;
 }
 
 .full-bg > div {
