@@ -15,19 +15,6 @@
   --shadow-color: rgba(0,0,0,0.1);
 }
 
-.dark body {
-  background: linear-gradient(
-    135deg,
-    #0a1612,
-    #071825,
-    #100a20,
-    #071825,
-    #0a1612
-  );
-  background-size: 400% 400%;
-  animation: bgFlow 14s ease-in-out infinite;
-}
-
 .dark {
   --background: #071310;
   --foreground: #e6fff5;
