@@ -104,6 +104,23 @@ body {
   border-color: rgba(52,211,153,0.08) !important;
 }
 
+/* ── Nav wave (PS-style liquid background) ───────────────── */
+
+@keyframes nw1 {
+  0%, 100% { transform: translateX(0%)  rotate(0deg)   scaleX(1);    }
+  33%       { transform: translateX(4%)  rotate(1.5deg) scaleX(1.04); }
+  66%       { transform: translateX(-4%) rotate(-1deg)  scaleX(0.97); }
+}
+@keyframes nw2 {
+  0%, 100% { transform: translateX(0%)  rotate(0deg)    scaleX(1);    }
+  40%       { transform: translateX(-5%) rotate(-2deg)  scaleX(1.05); }
+  75%       { transform: translateX(3%)  rotate(1.5deg) scaleX(0.96); }
+}
+@keyframes nw3 {
+  0%, 100% { transform: translateX(0%)  rotate(0deg)   scaleX(1);    }
+  50%       { transform: translateX(6%)  rotate(2deg)  scaleX(1.06); }
+}
+
 /* ── Animaciones ──────────────────────────────────────────── */
 
 @keyframes fadeIn {

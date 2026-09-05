@@ -60,11 +60,11 @@ const tabs = [
   },
 ];
 
-// SVG wave paths with period=160px, range x=-170 to x=490
-// Each wave: translateX 0→-160 = exactly one seamless period
-const W1 = "M-160,22 C-138,12 -102,32 -80,22 C-58,12 -22,32 0,22 C22,12 58,32 80,22 C102,12 138,32 160,22 C182,12 218,32 240,22 C262,12 298,32 320,22 C342,12 378,32 400,22 C422,12 458,32 480,22";
-const W2 = "M-160,40 C-128,28 -96,52 -64,40 C-32,28 0,52 32,40 C64,28 96,52 128,40 C160,28 192,52 224,40 C256,28 288,52 320,40 C352,28 384,52 416,40 C448,28 480,52 512,40";
-const W3 = "M-160,57 C-120,47 -80,65 -40,57 C0,47 40,65 80,57 C120,47 160,65 200,57 C240,47 280,65 320,57 C360,47 400,65 440,57 C480,47 520,65 560,57";
+const WAVES = [
+  { color: "rgba(16,185,129,0.22)",  anim: "nw1 7s ease-in-out infinite",        top: "-30%", left: "-10%",  w: "120%", h: "160%", br: "42% 58% 55% 45% / 48% 52% 48% 52%" },
+  { color: "rgba(56,189,248,0.18)",  anim: "nw2 10s ease-in-out infinite 1.5s",  top: "-20%", left: "-5%",   w: "115%", h: "150%", br: "58% 42% 48% 52% / 52% 48% 58% 42%" },
+  { color: "rgba(167,139,250,0.15)", anim: "nw3 13s ease-in-out infinite 3s",    top: "-25%", left: "-15%",  w: "130%", h: "170%", br: "45% 55% 60% 40% / 55% 45% 55% 45%" },
+];
 
 export default function BottomNav({ active = "discover", onChange, matchCount = 0, likesCount = 0 }) {
   return (
@@ -85,51 +85,18 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
           gap: 2,
         }}
       >
-        {/* PS-style flowing waves — pure SVG + CSS, no JS needed */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 320 70"
-          preserveAspectRatio="xMidYMid slice"
-          style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%",
-            pointerEvents: "none", borderRadius: 36, overflow: "hidden",
-          }}
-        >
-          <defs>
-            <style>{
-              `@keyframes ws1{from{transform:translateX(0)}to{transform:translateX(-160px)}}
-               @keyframes ws2{from{transform:translateX(-40px)}to{transform:translateX(-200px)}}
-               @keyframes ws3{from{transform:translateX(-80px)}to{transform:translateX(-240px)}}`
-            }</style>
-            <filter id="glow1" x="-20%" y="-60%" width="140%" height="220%">
-              <feGaussianBlur stdDeviation="2.5" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <filter id="glow2" x="-20%" y="-60%" width="140%" height="220%">
-              <feGaussianBlur stdDeviation="3" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-
-          {/* Wave 1 — green */}
-          <path d={W1} fill="none" stroke="rgba(16,185,129,0.65)" strokeWidth="1.5" strokeLinecap="round"
-            filter="url(#glow1)"
-            style={{ animation: "ws1 5s linear infinite" }}
-          />
-
-          {/* Wave 2 — sky blue */}
-          <path d={W2} fill="none" stroke="rgba(56,189,248,0.60)" strokeWidth="1.3" strokeLinecap="round"
-            filter="url(#glow2)"
-            style={{ animation: "ws2 8s linear infinite" }}
-          />
-
-          {/* Wave 3 — violet */}
-          <path d={W3} fill="none" stroke="rgba(167,139,250,0.55)" strokeWidth="1.1" strokeLinecap="round"
-            filter="url(#glow1)"
-            style={{ animation: "ws3 11s linear infinite" }}
-          />
-        </svg>
+        {/* PS-style liquid wave layers */}
+        {WAVES.map((w, i) => (
+          <div key={i} aria-hidden="true" style={{
+            position: "absolute",
+            top: w.top, left: w.left,
+            width: w.w, height: w.h,
+            borderRadius: w.br,
+            background: w.color,
+            animation: w.anim,
+            pointerEvents: "none",
+          }} />
+        ))}
 
         {tabs.map((tab) => {
           const isActive = active === tab.id;
