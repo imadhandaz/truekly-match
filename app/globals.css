@@ -42,18 +42,52 @@
 }
 
 body {
-  background:
-    radial-gradient(ellipse at 15% 0%, rgba(14,165,233,0.14), transparent 55%),
-    radial-gradient(ellipse at 85% 100%, rgba(16,185,129,0.14), transparent 55%),
-    radial-gradient(ellipse at 50% 50%, rgba(16,185,129,0.04), transparent 70%),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
   overscroll-behavior: none;
 }
 
-/* ââ Dark mode: componentes con bg-white hardcodeado ââ */
+/* Blob background */
+@keyframes blob-drift-1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  25%  { transform: translate(40px, -60px) scale(1.08); }
+  50%  { transform: translate(-30px, 30px) scale(0.94); }
+  75%  { transform: translate(20px, 50px) scale(1.05); }
+}
+@keyframes blob-drift-2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  30%  { transform: translate(-50px, 40px) scale(1.1); }
+  60%  { transform: translate(40px, -30px) scale(0.92); }
+  80%  { transform: translate(-20px, -40px) scale(1.06); }
+}
+@keyframes blob-drift-3 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  20%  { transform: translate(60px, 20px) scale(0.95); }
+  50%  { transform: translate(-20px, -50px) scale(1.12); }
+  80%  { transform: translate(30px, 40px) scale(0.97); }
+}
+.blob-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.blob-bg > div { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.55; }
+.dark .blob-bg > div { opacity: 0.35; }
+.blob-1 {
+  width: 480px; height: 480px; top: -140px; left: -100px;
+  background: radial-gradient(circle, rgba(16,185,129,0.55), rgba(14,165,233,0.2));
+  animation: blob-drift-1 12s ease-in-out infinite;
+}
+.blob-2 {
+  width: 400px; height: 400px; bottom: 60px; right: -80px;
+  background: radial-gradient(circle, rgba(14,165,233,0.5), rgba(16,185,129,0.15));
+  animation: blob-drift-2 16s ease-in-out infinite;
+}
+.blob-3 {
+  width: 320px; height: 320px; bottom: -60px; left: 25%;
+  background: radial-gradient(circle, rgba(52,211,153,0.4), rgba(56,189,248,0.2));
+  animation: blob-drift-3 10s ease-in-out infinite;
+}
+
+/* ── Dark mode: componentes con bg-white hardcodeado ── */
 .dark .bg-white {
   background-color: var(--surface-raised) !important;
 }
@@ -67,7 +101,7 @@ body {
   border-color: rgba(52,211,153,0.08) !important;
 }
 
-/* ââ Animaciones ââââââââââââââââââââââââââââââââââââââââââââ */
+/* ── Animaciones ──────────────────────────────────────────── */
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }

@@ -64,6 +64,7 @@ export default function RootLayout({ children }) {
           src="https://plausible.io/js/script.js"
           strategy="afterInteractive"
         />
+        <div className="blob-bg" aria-hidden="true"><div className="blob-1" /><div className="blob-2" /><div className="blob-3" /></div>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
