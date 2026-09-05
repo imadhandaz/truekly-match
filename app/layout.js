@@ -31,16 +31,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        {/* Animated blob background — z-index:1, below all content */}
-        <div className="full-bg" aria-hidden="true">
-          <div className="fb1" />
-          <div className="fb2" />
-          <div className="fb3" />
-        </div>
-        {/* Content wrapper — z-index:2, above blobs */}
-        <div className="app-content">
-          <AuthProvider>{children}</AuthProvider>
-        </div>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

@@ -15,6 +15,19 @@
   --shadow-color: rgba(0,0,0,0.1);
 }
 
+.dark body {
+  background: linear-gradient(
+    135deg,
+    #0a1612,
+    #071825,
+    #100a20,
+    #071825,
+    #0a1612
+  );
+  background-size: 400% 400%;
+  animation: bgFlow 14s ease-in-out infinite;
+}
+
 .dark {
   --background: #071310;
   --foreground: #e6fff5;
@@ -104,71 +117,6 @@ body {
   background: rgba(7,19,16,0.85) !important;
   border-color: rgba(52,211,153,0.08) !important;
 }
-
-/* ── Full-screen blob background ─────────────────────────── */
-
-@keyframes fb1 {
-  0%,100% { transform: translate(0,0)   scale(1);    }
-  33%      { transform: translate(60px,-80px) scale(1.1); }
-  66%      { transform: translate(-40px,50px) scale(0.92); }
-}
-@keyframes fb2 {
-  0%,100% { transform: translate(0,0)    scale(1);    }
-  40%      { transform: translate(-70px,60px)  scale(1.08); }
-  75%      { transform: translate(50px,-40px)  scale(0.94); }
-}
-@keyframes fb3 {
-  0%,100% { transform: translate(0,0)    scale(1);    }
-  50%      { transform: translate(40px,70px)   scale(1.12); }
-}
-
-.full-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* App content wrapper sits above blobs */
-.app-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.full-bg > div {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.fb1 {
-  width: 700px; height: 700px;
-  top: -220px; left: -180px;
-  background: radial-gradient(circle at 40% 40%, rgba(16,185,129,0.40), transparent 68%);
-  animation: fb1 14s ease-in-out infinite;
-}
-
-.fb2 {
-  width: 650px; height: 650px;
-  bottom: -150px; right: -180px;
-  background: radial-gradient(circle at 60% 60%, rgba(14,165,233,0.35), transparent 68%);
-  animation: fb2 18s ease-in-out infinite 2s;
-}
-
-.fb3 {
-  width: 520px; height: 520px;
-  top: 35%; left: 20%;
-  background: radial-gradient(circle at 50% 50%, rgba(99,102,241,0.28), transparent 68%);
-  animation: fb3 12s ease-in-out infinite 4s;
-}
-
-.dark .fb1 { background: radial-gradient(circle at 40% 40%, rgba(52,211,153,0.25), transparent 68%); }
-.dark .fb2 { background: radial-gradient(circle at 60% 60%, rgba(56,189,248,0.22), transparent 68%); }
-.dark .fb3 { background: radial-gradient(circle at 50% 50%, rgba(139,92,246,0.20), transparent 68%); }
 
 /* ── Nav wave (PS-style liquid background) ───────────────── */
 
