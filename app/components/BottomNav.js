@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 const tabs = [
   {
     id: "discover",
@@ -60,7 +62,91 @@ const tabs = [
   },
 ];
 
-export default function BottomNav({ active = "discover", onChange, matchCount = 0, likesCount = 0, unreadChats = 0 }) {
+function NavWaves() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    let t = 0;
+
+    const parent = canvas.parentElement;
+    const resize = () => {
+      canvas.width = parent.offsetWidth || 320;
+      canvas.height = parent.offsetHeight || 70;
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(parent);
+
+    const WAVES = [
+      { yR: 0.30, amp: 11, f1: 0.020, f2: 0.036, s1: 0.9, s2: 0.6, rgb: "16,185,129",  lw: 1.2, glow: 10 },
+      { yR: 0.52, amp: 14, f1: 0.015, f2: 0.028, s1: 0.7, s2: 0.45, rgb: "56,189,248",  lw: 1.0, glow: 12 },
+      { yR: 0.72, amp: 10, f1: 0.024, f2: 0.042, s1: 1.1, s2: 0.75, rgb: "167,139,250", lw: 0.9, glow: 9  },
+    ];
+
+    function getY(w, x, time) {
+      return (
+        w.yR * canvas.height
+        + Math.sin(x * w.f1 + time * w.s1) * w.amp
+        + Math.sin(x * w.f2 + time * w.s2) * w.amp * 0.42
+      );
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      t += 0.016;
+
+      WAVES.forEach((w) => {
+        // Soft fill
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height);
+        for (let x = 0; x <= canvas.width; x += 2) {
+          const y = getY(w, x, t);
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.closePath();
+        const fill = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        fill.addColorStop(0, `rgba(${w.rgb},0.10)`);
+        fill.addColorStop(1, `rgba(${w.rgb},0.02)`);
+        ctx.fillStyle = fill;
+        ctx.fill();
+
+        // Glowing line
+        ctx.beginPath();
+        for (let x = 0; x <= canvas.width; x += 2) {
+          const y = getY(w, x, t);
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(${w.rgb},0.55)`;
+        ctx.lineWidth = w.lw;
+        ctx.lineJoin = "round";
+        ctx.shadowBlur = w.glow;
+        ctx.shadowColor = `rgba(${w.rgb},0.9)`;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }, []);
+
+  return (
+    <canvas
+      ref={ref}
+      aria-hidden="true"
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", borderRadius: 36, pointerEvents: "none" }}
+    />
+  );
+}
+
+export default function BottomNav({ active = "discover", onChange, matchCount = 0, likesCount = 0 }) {
   return (
     <nav
       className="fixed left-0 right-0 z-30 flex justify-center"
@@ -69,6 +155,8 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
       <div
         className="flex items-center px-3"
         style={{
+          position: "relative",
+          overflow: "hidden",
           background: "rgba(12,16,14,0.93)",
           backdropFilter: "blur(24px)",
           borderRadius: 36,
@@ -77,6 +165,7 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
           gap: 2,
         }}
       >
+        <NavWaves />
         {tabs.map((tab) => {
           const isActive = active === tab.id;
 
@@ -87,6 +176,7 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
                 onClick={() => onChange?.(tab.id)}
                 className="relative flex flex-col items-center justify-center transition-all active:scale-90"
                 style={{
+                  zIndex: 1,
                   width: 58,
                   height: 58,
                   borderRadius: "50%",
@@ -127,6 +217,7 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
               onClick={() => onChange?.(tab.id)}
               className="relative flex flex-col items-center gap-0.5 transition-all active:scale-90"
               style={{
+                zIndex: 1,
                 minWidth: 56,
                 padding: "8px 6px",
                 borderRadius: 26,
@@ -158,21 +249,6 @@ export default function BottomNav({ active = "discover", onChange, matchCount = 
                   }}
                 >
                   {likesCount}
-                </span>
-              )}
-              {tab.id === "chats" && unreadChats > 0 && (
-                <span
-                  className="absolute flex items-center justify-center text-white font-black"
-                  style={{
-                    top: 4, right: 8,
-                    minWidth: 16, height: 16,
-                    borderRadius: 8,
-                    fontSize: 9,
-                    background: "linear-gradient(135deg,#3b82f6,#6366f1)",
-                    paddingInline: 3,
-                  }}
-                >
-                  {unreadChats > 9 ? "9+" : unreadChats}
                 </span>
               )}
             </button>
