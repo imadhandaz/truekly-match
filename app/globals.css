@@ -68,7 +68,8 @@ body {
   50%  { transform: translate(-20px, -50px) scale(1.12); }
   80%  { transform: translate(30px, 40px) scale(0.97); }
 }
-.blob-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.blob-bg { position: fixed; inset: 0; z-index: 9998; pointer-events: none; overflow: hidden; mix-blend-mode: multiply; }
+.dark .blob-bg { mix-blend-mode: screen; }
 .blob-bg > div { position: absolute; border-radius: 50%; filter: blur(70px); }
 .blob-1 {
   width: 500px; height: 500px; top: -150px; left: -120px;
