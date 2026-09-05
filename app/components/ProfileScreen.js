@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function ProfileScreen({
   myProducts,
   onAdd,
@@ -29,7 +31,7 @@ export default function ProfileScreen({
           </div>
           {verified && (
             <span className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-sm font-black flex items-center justify-center shadow-md border-2 border-background">
-              ✓
+              â
             </span>
           )}
         </div>
@@ -59,7 +61,7 @@ export default function ProfileScreen({
           onClick={onSignIn}
           className="w-full mb-6 p-4 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-[1.01] transition"
         >
-          Inicia sesión o regístrate
+          Inicia sesiÃ³n o regÃ­strate
         </button>
       )}
 
@@ -68,16 +70,16 @@ export default function ProfileScreen({
           onClick={onVerify}
           className="w-full mb-6 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
         >
-          <span className="text-3xl">✓</span>
+          <span className="text-3xl">â</span>
           <div className="flex-1">
             <p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
               Verifica tu identidad
             </p>
             <p className="text-xs text-foreground/60 mt-0.5">
-              Tick azul + 3× más matches · Tarda 1 minuto
+              Tick azul + 3Ã mÃ¡s matches Â· Tarda 1 minuto
             </p>
           </div>
-          <span className="text-brand-blue-dark text-xl">›</span>
+          <span className="text-brand-blue-dark text-xl">âº</span>
         </button>
       )}
 
@@ -98,10 +100,10 @@ export default function ProfileScreen({
           onClick={onAdd}
           className="w-full py-12 rounded-3xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center gap-2 text-foreground/50 hover:text-brand-green"
         >
-          <span className="text-4xl">📦</span>
+          <span className="text-4xl">ð¦</span>
           <span className="font-semibold">Sube tu primer producto</span>
           <span className="text-xs text-foreground/40">
-            Sin productos no aparecerás a otros
+            Sin productos no aparecerÃ¡s a otros
           </span>
         </button>
       ) : (
@@ -122,14 +124,14 @@ export default function ProfileScreen({
                   className="px-2 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-black shadow"
                   aria-label="Boost"
                 >
-                  🚀 BOOST
+                  ð BOOST
                 </button>
                 <button
                   onClick={() => onDelete(p.id)}
                   className="w-8 h-8 rounded-full bg-black/60 text-white text-sm flex items-center justify-center hover:bg-red-500 transition"
                   aria-label="Eliminar"
                 >
-                  🗑
+                  ð
                 </button>
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
@@ -143,7 +145,7 @@ export default function ProfileScreen({
             className="aspect-[3/4] rounded-2xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center justify-center text-foreground/40 hover:text-brand-green"
           >
             <span className="text-3xl">+</span>
-            <span className="text-xs font-semibold mt-1">Añadir</span>
+            <span className="text-xs font-semibold mt-1">AÃ±adir</span>
           </button>
         </div>
       )}
@@ -154,7 +156,7 @@ export default function ProfileScreen({
           className="w-full p-4 rounded-2xl bg-foreground/5 hover:bg-foreground/10 transition flex items-center justify-between"
         >
           <div className="flex items-center gap-3 text-left">
-            <span className="text-2xl">{darkMode ? "🌙" : "☀️"}</span>
+            <span className="text-2xl">{darkMode ? "ð" : "âï¸"}</span>
             <div>
               <p className="font-bold text-sm">Modo {darkMode ? "oscuro" : "claro"}</p>
               <p className="text-[12px] text-foreground/55">
@@ -168,9 +170,9 @@ export default function ProfileScreen({
         </button>
 
         <div className="p-4 rounded-2xl bg-foreground/5 text-sm text-foreground/70">
-          <p className="font-bold mb-1">💡 Consejo</p>
+          <p className="font-bold mb-1">ð¡ Consejo</p>
           <p className="text-[13px] leading-relaxed">
-            Cuantos más productos subas, más matches conseguirás. Fotos claras y descripción
+            Cuantos mÃ¡s productos subas, mÃ¡s matches conseguirÃ¡s. Fotos claras y descripciÃ³n
             honesta son la clave.
           </p>
         </div>
@@ -181,7 +183,7 @@ export default function ProfileScreen({
               onClick={onSignOut}
               className="w-full p-3 rounded-2xl text-sm font-bold text-foreground/70 hover:bg-foreground/5 transition"
             >
-              Cerrar sesión
+              Cerrar sesiÃ³n
             </button>
             <button
               onClick={onDeleteAccount}
@@ -191,6 +193,12 @@ export default function ProfileScreen({
             </button>
           </>
         )}
+      </div>
+        <div className="text-center pt-2 pb-1">
+          <Link href="/legal" className="text-xs text-foreground/40 hover:text-foreground/60 transition underline underline-offset-2">
+            Términos y Privacidad
+          </Link>
+        </div>
       </div>
     </div>
   );

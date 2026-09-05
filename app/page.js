@@ -44,7 +44,7 @@ function shapeProduct(p) {
     wants: p.wants || "",
     description: p.description || "",
     tags: p.tags || [],
-    location: p.neighborhood || "España",
+    location: p.neighborhood || "EspaÃ±a",
     neighborhood: p.neighborhood || "",
   };
 }
@@ -64,7 +64,7 @@ function shapeMatch(match, userId) {
     wants: product.wants || "",
     owner: ownerProfile.display_name || ownerProfile.username || "Usuario",
     verified: ownerProfile.verified || false,
-    location: product.neighborhood || "Espa�a",
+    location: product.neighborhood || "Espaï¿½a",
     neighborhood: product.neighborhood || "",
     other_user_id: isUserA ? match.user_b : match.user_a,
   };
@@ -95,6 +95,7 @@ function HomeInner() {
   const [unreadChats, setUnreadChats] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [activeCat, setActiveCat] = useState("Todo");
 
   const { user, profile, signOut } = useAuth();
@@ -132,7 +133,7 @@ function HomeInner() {
   // Handle ?gold=success after Stripe redirect
   useEffect(() => {
     if (searchParams.get("gold") === "success") {
-      alert("¡Ya eres Gold! ✨ Disfruta de todos los beneficios.");
+      alert("Â¡Ya eres Gold! â¨ Disfruta de todos los beneficios.");
       router.replace("/");
     }
   }, [searchParams, router]);
@@ -151,13 +152,17 @@ function HomeInner() {
   }, [user?.id]);
 
   const fetchPublicProducts = async (userId) => {
+    setLoadingProducts(true);
     let query = supabase
       .from("products")
       .select("*, profiles!owner_id(username, display_name, neighborhood, verified, gold)")
-      .eq("active", true);
+      .eq("active", true)
+      .order("boosted_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
     if (userId) query = query.neq("owner_id", userId);
     const { data } = await query;
     setProducts((data || []).map(shapeProduct));
+    setLoadingProducts(false);
   };
 
   const fetchAll = async (userId) => {
@@ -179,17 +184,28 @@ function HomeInner() {
       .eq("swiper_id", userId);
     const swipedIds = new Set((swipedRows || []).map((s) => s.product_id));
 
-    // Fetch discover products (exclude own + already swiped)
+    // Fetch blocked user IDs
+    const { data: blocksData } = await supabase
+      .from("blocks")
+      .select("blocked_id, blocker_id")
+      .or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
+    const blockedSet = new Set((blocksData || []).flatMap((b) => [b.blocked_id, b.blocker_id]).filter((id) => id !== userId));
+
+    // Fetch discover products (exclude own + already swiped + blocked)
+    setLoadingProducts(true);
     const { data: productsData } = await supabase
       .from("products")
       .select("*, profiles!owner_id(username, display_name, neighborhood, verified, gold)")
       .eq("active", true)
-      .neq("owner_id", userId);
+      .neq("owner_id", userId)
+      .order("boosted_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
     setProducts(
       (productsData || [])
-        .filter((p) => !swipedIds.has(p.id))
+        .filter((p) => !swipedIds.has(p.id) && !blockedSet.has(p.owner_id))
         .map(shapeProduct)
     );
+    setLoadingProducts(false);
 
     // Fetch matches with both products joined for perspective-aware display
     const { data: matchesData } = await supabase
@@ -394,12 +410,12 @@ function HomeInner() {
               onClick={() => openGold("Hazte Gold")}
               className="px-3 py-1.5 rounded-full text-sm font-black bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-md hover:scale-105 transition flex items-center gap-1"
             >
-              <span>✨</span>
+              <span>â¨</span>
               <span>Gold</span>
             </button>
           )}
           <IconButton label="Filtros" onClick={() => setShowFilters(true)} active={filterActive}>
-            ⚙
+            â
           </IconButton>
           <IconButton
             label="Subir producto"
@@ -421,7 +437,7 @@ function HomeInner() {
                 onClick={() => setShowUpload(true)}
                 className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
               >
-                <span className="text-3xl">📦</span>
+                <span className="text-3xl">ð¦</span>
                 <div className="flex-1">
                   <p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
                     Sube tu primer producto
@@ -430,22 +446,22 @@ function HomeInner() {
                     Es lo que vas a ofrecer en los trueques
                   </p>
                 </div>
-                <span className="text-brand-blue-dark text-xl">›</span>
+                <span className="text-brand-blue-dark text-xl">âº</span>
               </button>
             )}
             {filterActive && (
               <div className="w-full max-w-sm mb-4 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-between text-xs animate-fadeIn">
                 <span className="font-semibold text-brand-blue-dark">
                   {filters.cats.length > 0
-                    ? `${filters.cats.length} categoría${filters.cats.length > 1 ? "s" : ""}`
-                    : "Todas categorías"}{" "}
-                  · &lt;{filters.maxKm} km
+                    ? `${filters.cats.length} categorÃ­a${filters.cats.length > 1 ? "s" : ""}`
+                    : "Todas categorÃ­as"}{" "}
+                  Â· &lt;{filters.maxKm} km
                 </span>
                 <button
                   onClick={() => setFilters({ cats: [], maxKm: 50 })}
                   className="text-foreground/60 hover:text-foreground font-bold"
                 >
-                  Limpiar ✕
+                  Limpiar â
                 </button>
               </div>
             )}
@@ -454,7 +470,7 @@ function HomeInner() {
                 onClick={() => openGold("Te quedan pocos swipes hoy")}
                 className="w-full max-w-sm mb-4 p-3 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 flex items-center gap-3 hover:scale-[1.01] transition animate-fadeIn"
               >
-                <span className="text-xl">⚡</span>
+                <span className="text-xl">â¡</span>
                 <div className="flex-1 text-left">
                   <p className="text-xs font-bold text-foreground">
                     Te quedan <b>{remainingSwipes}</b> swipes hoy
@@ -463,24 +479,28 @@ function HomeInner() {
                     Hazte Gold para ilimitados
                   </p>
                 </div>
-                <span className="text-orange-500 font-bold">→</span>
+                <span className="text-orange-500 font-bold">â</span>
               </button>
             )}
-            <SwipeDeck
-              items={filteredProducts}
-              onMatch={() => {}}
-              onOpenChat={openChatFor}
-              onSwipe={handleSwipe}
-              outOfSwipes={!isGold && remainingSwipes <= 0}
-              onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
-            />
+            {loadingProducts ? (
+              <SkeletonDeck />
+            ) : (
+              <SwipeDeck
+                items={filteredProducts}
+                onMatch={() => {}}
+                onOpenChat={openChatFor}
+                onSwipe={handleSwipe}
+                outOfSwipes={!isGold && remainingSwipes <= 0}
+                onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
+              />
+            )}
           </>
         )}
         {activeTab === "likes" && (
           <LikesYouScreen
             products={likes}
             isGold={isGold}
-            onUpgrade={() => openGold("Hazte Gold para ver quién te ha dado like")}
+            onUpgrade={() => openGold("Hazte Gold para ver quiÃ©n te ha dado like")}
           />
         )}
         {activeTab === "matches" && (
@@ -541,9 +561,9 @@ function HomeInner() {
               ? {
                   title: myProducts[0].title,
                   photos: myProducts[0].photos,
-                  owner: profile?.display_name || "Tú",
+                  owner: profile?.display_name || "TÃº",
                 }
-              : { title: "Tu producto", photos: [], owner: "Tú" }
+              : { title: "Tu producto", photos: [], owner: "TÃº" }
           }
           theirProduct={matchModalCard}
           onClose={() => setMatchModalCard(null)}
@@ -619,18 +639,18 @@ export default function Home() {
 }
 
 const DISCOVER_CATS = [
-  { id: "Todo", emoji: "🌐", label: "Todo" },
-  { id: "Móvil", emoji: "📱", label: "Móviles" },
-  { id: "Consola", emoji: "🎮", label: "Consolas" },
-  { id: "Portátil", emoji: "💻", label: "Portátiles" },
-  { id: "Vehículo", emoji: "🚗", label: "Vehículos" },
-  { id: "Vivienda", emoji: "🏠", label: "Vivienda" },
-  { id: "Equipo", emoji: "⚽", label: "Equipos" },
-  { id: "Movilidad", emoji: "🛴", label: "Movilidad" },
-  { id: "Ropa", emoji: "👗", label: "Moda" },
-  { id: "Hogar", emoji: "🏡", label: "Hogar" },
-  { id: "Cámara", emoji: "📷", label: "Cámaras" },
-  { id: "Otro", emoji: "📦", label: "Otros" },
+  { id: "Todo", emoji: "ð", label: "Todo" },
+  { id: "MÃ³vil", emoji: "ð±", label: "MÃ³viles" },
+  { id: "Consola", emoji: "ð®", label: "Consolas" },
+  { id: "PortÃ¡til", emoji: "ð»", label: "PortÃ¡tiles" },
+  { id: "VehÃ­culo", emoji: "ð", label: "VehÃ­culos" },
+  { id: "Vivienda", emoji: "ð ", label: "Vivienda" },
+  { id: "Equipo", emoji: "â½", label: "Equipos" },
+  { id: "Movilidad", emoji: "ð´", label: "Movilidad" },
+  { id: "Ropa", emoji: "ð", label: "Moda" },
+  { id: "Hogar", emoji: "ð¡", label: "Hogar" },
+  { id: "CÃ¡mara", emoji: "ð·", label: "CÃ¡maras" },
+  { id: "Otro", emoji: "ð¦", label: "Otros" },
 ];
 
 function CategoryTabs({ active, onChange }) {
@@ -656,6 +676,20 @@ function CategoryTabs({ active, onChange }) {
   );
 }
 
+function SkeletonDeck() {
+  return (
+    <div className="w-full max-w-sm mx-auto animate-pulse" style={{ aspectRatio: "3/4.6" }}>
+      <div className="w-full h-full rounded-3xl bg-foreground/8 relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 p-5 space-y-3">
+          <div className="h-8 w-2/3 rounded-full bg-foreground/10" />
+          <div className="h-4 w-1/3 rounded-full bg-foreground/8" />
+          <div className="h-16 rounded-2xl bg-foreground/8" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IconButton({ children, label, onClick, highlight, active }) {
   let cls = "bg-white/70 hover:bg-white backdrop-blur border-foreground/5";
   if (highlight) cls = "bg-gradient-to-br from-brand-green to-brand-blue text-white border-transparent hover:scale-110 shadow-brand-blue/30 shadow-lg";
@@ -675,8 +709,8 @@ function MatchesList({ matches, onOpen }) {
   if (matches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-20">
-        <div className="text-7xl mb-4 opacity-70">💚</div>
-        <h2 className="text-2xl font-bold mb-2">Sin matches todavía</h2>
+        <div className="text-7xl mb-4 opacity-70">ð</div>
+        <h2 className="text-2xl font-bold mb-2">Sin matches todavÃ­a</h2>
         <p className="text-foreground/60 max-w-xs">
           Sigue descubriendo productos para encontrar trueques
         </p>
@@ -702,7 +736,7 @@ function MatchesList({ matches, onOpen }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
-              💬
+              ð¬
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
               <p className="font-bold text-sm leading-tight">{m.title}</p>
