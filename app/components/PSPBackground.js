@@ -2,6 +2,13 @@
 import { useEffect, useRef } from "react";
 import { getSupabase } from "@/lib/supabase";
 
+const RIBBON_CATS = [
+  ["Móvil", "Portátil"],
+  ["Consola", "Tablet"],
+  ["Cámara", "Ropa"],
+  ["Movilidad", "Hogar"],
+];
+
 export default function PSPBackground() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -9,31 +16,34 @@ export default function PSPBackground() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     let rafId, t = 0;
-    const imgs = [];
+    const ribbonImgs = [[], [], [], []];
 
-    getSupabase()
-      .from("products")
-      .select("photos")
-      .eq("active", true)
-      .order("created_at", { ascending: false })
-      .limit(24)
-      .then(({ data }) => {
-        for (const p of (data || [])) {
-          const url = p.photos?.[0];
-          if (!url) continue;
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = url;
-          imgs.push(img);
-        }
-      });
+    const sb = getSupabase();
+    RIBBON_CATS.forEach((cats, ri) => {
+      sb.from("products")
+        .select("photos")
+        .eq("active", true)
+        .in("category", cats)
+        .order("created_at", { ascending: false })
+        .limit(8)
+        .then(({ data }) => {
+          for (const p of (data || [])) {
+            const url = p.photos?.[0];
+            if (!url) continue;
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = url;
+            ribbonImgs[ri].push(img);
+          }
+        });
+    });
 
     const SIZE = 38;
     const particles = Array.from({ length: 4 }, (_, ri) =>
       Array.from({ length: 3 }, (_, pi) => ({
         pos: pi / 3 + Math.random() * 0.12,
         speed: 0.00050 + ri * 0.00006 + Math.random() * 0.00018,
-        imgIdx: ri * 3 + pi,
+        imgIdx: pi,
       }))
     );
 
@@ -83,26 +93,26 @@ export default function PSPBackground() {
       });
       ctx.shadowBlur = 0;
 
-      if (imgs.length > 0) {
-        ribbons.forEach((r, ri) => {
-          const { cy, cp1, cp2, ey } = curves[ri];
-          particles[ri].forEach(p => {
-            p.pos += p.speed;
-            if (p.pos > 1.15) { p.pos = -0.12; p.imgIdx = Math.floor(Math.random()*imgs.length); }
-            if (p.pos < 0 || p.pos > 1) return;
-            const pt = bezierPt(p.pos, 0,cy, W*.33,cp1, W*.66,cp2, W,ey);
-            const img = imgs[p.imgIdx % imgs.length];
-            if (!img?.complete || !img.naturalWidth) return;
-            const s = SIZE;
-            ctx.save();
-            ctx.beginPath(); ctx.arc(pt.x,pt.y,s/2+3,0,Math.PI*2);
-            ctx.strokeStyle=r.glow; ctx.lineWidth=2.5; ctx.shadowColor=r.glow; ctx.shadowBlur=16; ctx.stroke();
-            ctx.beginPath(); ctx.arc(pt.x,pt.y,s/2,0,Math.PI*2); ctx.clip();
-            ctx.drawImage(img,pt.x-s/2,pt.y-s/2,s,s);
-            ctx.restore();
-          });
+      ribbons.forEach((r, ri) => {
+        const imgs = ribbonImgs[ri];
+        if (!imgs.length) return;
+        const { cy, cp1, cp2, ey } = curves[ri];
+        particles[ri].forEach(p => {
+          p.pos += p.speed;
+          if (p.pos > 1.15) { p.pos = -0.12; p.imgIdx = (p.imgIdx + 1) % imgs.length; }
+          if (p.pos < 0 || p.pos > 1) return;
+          const pt = bezierPt(p.pos, 0,cy, W*.33,cp1, W*.66,cp2, W,ey);
+          const img = imgs[p.imgIdx % imgs.length];
+          if (!img?.complete || !img.naturalWidth) return;
+          const s = SIZE;
+          ctx.save();
+          ctx.beginPath(); ctx.arc(pt.x,pt.y,s/2+3,0,Math.PI*2);
+          ctx.strokeStyle=r.glow; ctx.lineWidth=2.5; ctx.shadowColor=r.glow; ctx.shadowBlur=16; ctx.stroke();
+          ctx.beginPath(); ctx.arc(pt.x,pt.y,s/2,0,Math.PI*2); ctx.clip();
+          ctx.drawImage(img,pt.x-s/2,pt.y-s/2,s,s);
+          ctx.restore();
         });
-      }
+      });
 
       t += 0.008;
       rafId = requestAnimationFrame(draw);
