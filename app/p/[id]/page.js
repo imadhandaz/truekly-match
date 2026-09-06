@@ -11,21 +11,21 @@ export async function generateMetadata({ params }) {
   if (!p) return { title: "Truekly Match" };
 
   const owner = p.profiles?.display_name || "Alguien";
-  const desc = owner + " ofrece " + p.title + " a cambio de " + p.wants + ". \u{00A1}\u{00DA}nete al trueque!";
+  const desc = `${owner} ofrece ${p.title} a cambio de ${p.wants}. ¡Únete al trueque!`;
 
   return {
-    title: p.title + " | Truekly Match",
+    title: `${p.title} | Truekly Match`,
     description: desc,
     openGraph: {
-      title: p.title + " \u{1F91D} Truekly Match",
-      description: "A cambio de: " + p.wants,
+      title: `${p.title} 🤝 Truekly Match`,
+      description: `A cambio de: ${p.wants}`,
       images: p.photos?.[0] ? [{ url: p.photos[0], width: 800, height: 600 }] : [],
-      url: (process.env.NEXT_PUBLIC_APP_URL || "") + "/p/" + params.id,
+      url: `${process.env.NEXT_PUBLIC_APP_URL}/p/${params.id}`,
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: p.title + " | Truekly Match",
+      title: `${p.title} | Truekly Match`,
       description: desc,
       images: p.photos?.[0] ? [p.photos[0]] : [],
     },
@@ -43,7 +43,7 @@ export default async function ProductPage({ params }) {
   if (!p) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
-        <div className="text-6xl mb-4">\u{1F615}</div>
+        <div className="text-6xl mb-4">😕</div>
         <h1 className="text-2xl font-bold mb-2">Producto no encontrado</h1>
         <p className="text-foreground/60 mb-6">Es posible que ya haya sido intercambiado</p>
         <Link href="/" className="px-6 py-3 rounded-full bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold">
@@ -71,22 +71,29 @@ export default async function ProductPage({ params }) {
 
         <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-6" style={{ aspectRatio: "3/4" }}>
           {photo ? (
-            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('" + photo + "')" }} />
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url('${photo}')` }}
+            />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-brand-green/20 to-brand-blue/20" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
           {p.category && (
             <div className="absolute top-4 right-4">
-              <span className="px-3 py-1 rounded-full bg-white/95 text-xs font-bold text-brand-blue-dark">{p.category}</span>
+              <span className="px-3 py-1 rounded-full bg-white/95 text-xs font-bold text-brand-blue-dark">
+                {p.category}
+              </span>
             </div>
           )}
+
           <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
             <h1 className="text-3xl font-bold mb-1">{p.title}</h1>
             <div className="flex items-center gap-1.5 mb-3">
               <p className="text-sm text-white/80">Por <b>{owner}</b></p>
               {p.profiles?.verified && (
-                <span className="w-4 h-4 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-[9px] font-black flex items-center justify-center">\u{2713}</span>
+                <span className="w-4 h-4 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-[9px] font-black flex items-center justify-center">✓</span>
               )}
             </div>
             <div className="bg-white/15 backdrop-blur rounded-xl p-3 border border-white/20">
@@ -102,10 +109,15 @@ export default async function ProductPage({ params }) {
           </p>
         )}
 
-        <Link href={appUrl} className="block w-full py-4 rounded-full bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold text-lg text-center shadow-2xl hover:scale-[1.02] transition">
-          \u{1F91D} Ver en Truekly Match
+        <Link
+          href={appUrl}
+          className="block w-full py-4 rounded-full bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold text-lg text-center shadow-2xl hover:scale-[1.02] transition"
+        >
+          🤝 Ver en Truekly Match
         </Link>
-        <p className="text-center text-xs text-foreground/50 mt-3">Trueque \u{00B7} Intercambio \u{00B7} Sin dinero</p>
+        <p className="text-center text-xs text-foreground/50 mt-3">
+          Trueque · Intercambio · Sin dinero
+        </p>
       </div>
     </div>
   );
