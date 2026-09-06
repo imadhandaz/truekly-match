@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { getSupabase } from "@/lib/supabase";
 
 export default function PSPBackground() {
   const canvasRef = useRef(null);
@@ -10,12 +11,13 @@ export default function PSPBackground() {
     let rafId, t = 0;
     const imgs = [];
 
-    const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supaKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (supaUrl && supaKey) {
-      fetch(`${supaUrl}/rest/v1/products?select=photos&active=eq.true&order=created_at.desc&limit=24`, {
-        headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` }
-      }).then(r => r.json()).then(data => {
+    getSupabase()
+      .from("products")
+      .select("photos")
+      .eq("active", true)
+      .order("created_at", { ascending: false })
+      .limit(24)
+      .then(({ data }) => {
         for (const p of (data || [])) {
           const url = p.photos?.[0];
           if (!url) continue;
@@ -24,8 +26,7 @@ export default function PSPBackground() {
           img.src = url;
           imgs.push(img);
         }
-      }).catch(() => {});
-    }
+      });
 
     const SIZE = 38;
     const particles = Array.from({ length: 4 }, (_, ri) =>
@@ -73,7 +74,6 @@ export default function PSPBackground() {
         return { cy, cp1, cp2, ey };
       });
 
-      // Draw ribbons
       ribbons.forEach((r, i) => {
         const { cy, cp1, cp2, ey } = curves[i];
         const path = () => { ctx.beginPath(); ctx.moveTo(0,cy); ctx.bezierCurveTo(W*.33,cp1,W*.66,cp2,W,ey); ctx.lineCap="round"; };
@@ -83,7 +83,6 @@ export default function PSPBackground() {
       });
       ctx.shadowBlur = 0;
 
-      // Draw product thumbnails flowing along ribbons
       if (imgs.length > 0) {
         ribbons.forEach((r, ri) => {
           const { cy, cp1, cp2, ey } = curves[ri];
@@ -94,12 +93,12 @@ export default function PSPBackground() {
             const pt = bezierPt(p.pos, 0,cy, W*.33,cp1, W*.66,cp2, W,ey);
             const img = imgs[p.imgIdx % imgs.length];
             if (!img?.complete || !img.naturalWidth) return;
-            const s = SIZE, x = pt.x - s/2, y = pt.y - s/2;
+            const s = SIZE;
             ctx.save();
             ctx.beginPath(); ctx.arc(pt.x,pt.y,s/2+3,0,Math.PI*2);
             ctx.strokeStyle=r.glow; ctx.lineWidth=2.5; ctx.shadowColor=r.glow; ctx.shadowBlur=16; ctx.stroke();
             ctx.beginPath(); ctx.arc(pt.x,pt.y,s/2,0,Math.PI*2); ctx.clip();
-            ctx.drawImage(img,x,y,s,s);
+            ctx.drawImage(img,pt.x-s/2,pt.y-s/2,s,s);
             ctx.restore();
           });
         });
