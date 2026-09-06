@@ -17,7 +17,8 @@ export default function ProfileScreen({
   onSignOut,
   onSignIn,
   onDeleteAccount,
-  onEdit,
+  isGold,
+  boostCredits,
 }) {
   const displayName = profile?.display_name || (user?.email ? user.email.split("@")[0] : "Yo");
   const initial = displayName.charAt(0).toUpperCase();
@@ -32,7 +33,7 @@ export default function ProfileScreen({
           </div>
           {verified && (
             <span className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-brand-green to-brand-blue text-white text-sm font-black flex items-center justify-center shadow-md border-2 border-background">
-              Ã¢ÂÂ
+              ✓
             </span>
           )}
         </div>
@@ -47,14 +48,6 @@ export default function ProfileScreen({
           </div>
           <p className="text-sm text-foreground/60 truncate">{subtitle}</p>
         </div>
-        {user && onEdit && (
-          <button
-            onClick={onEdit}
-            className="flex-none px-3 py-1.5 rounded-full text-xs font-bold bg-foreground/8 hover:bg-foreground/15 border border-foreground/10 transition"
-          >
-            Editar
-          </button>
-        )}
       </div>
 
       {!user && (
@@ -62,7 +55,7 @@ export default function ProfileScreen({
           onClick={onSignIn}
           className="w-full mb-6 p-4 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold shadow-lg hover:scale-[1.01] transition"
         >
-          Inicia sesiÃÂ³n o regÃÂ­strate
+          Inicia sesión o regístrate
         </button>
       )}
 
@@ -71,16 +64,16 @@ export default function ProfileScreen({
           onClick={onVerify}
           className="w-full mb-6 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
         >
-          <span className="text-3xl">Ã¢ÂÂ</span>
+          <span className="text-3xl">✓</span>
           <div className="flex-1">
             <p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
               Verifica tu identidad
             </p>
             <p className="text-xs text-foreground/60 mt-0.5">
-              Tick azul + 3ÃÂ mÃÂ¡s matches ÃÂ· Tarda 1 minuto
+              Tick azul + 3× más matches · Tarda 1 minuto
             </p>
           </div>
-          <span className="text-brand-blue-dark text-xl">Ã¢ÂÂº</span>
+          <span className="text-brand-blue-dark text-xl">›</span>
         </button>
       )}
 
@@ -115,10 +108,10 @@ export default function ProfileScreen({
           onClick={onAdd}
           className="w-full py-12 rounded-3xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center gap-2 text-foreground/50 hover:text-brand-green"
         >
-          <span className="text-4xl">Ã°ÂÂÂ¦</span>
+          <span className="text-4xl">📦</span>
           <span className="font-semibold">Sube tu primer producto</span>
           <span className="text-xs text-foreground/40">
-            Sin productos no aparecerÃÂ¡s a otros
+            Sin productos no aparecerás a otros
           </span>
         </button>
       ) : (
@@ -135,18 +128,28 @@ export default function ProfileScreen({
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
               <div className="absolute top-2 left-2 right-2 flex justify-between items-start opacity-0 group-hover:opacity-100 transition">
                 <button
-                  onClick={() => onBoost?.(p)}
-                  className="px-2 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-black shadow"
+                  onClick={() => {
+                    if (!isGold) { onBoost?.(p); return; }
+                    if (boostCredits > 0) { onBoost?.(p); }
+                    else { onBuyBoosts?.(); }
+                  }}
+                  className={`px-2 py-1 rounded-full text-white text-[10px] font-black shadow transition ${
+                    isGold && boostCredits > 0
+                      ? "bg-gradient-to-r from-yellow-400 to-orange-500"
+                      : isGold
+                      ? "bg-foreground/40"
+                      : "bg-gradient-to-r from-yellow-400 to-orange-500"
+                  }`}
                   aria-label="Boost"
                 >
-                  Ã°ÂÂÂ BOOST
+                  🚀 {isGold && boostCredits <= 0 ? "Sin boosts" : "BOOST"}
                 </button>
                 <button
                   onClick={() => onDelete(p.id)}
                   className="w-8 h-8 rounded-full bg-black/60 text-white text-sm flex items-center justify-center hover:bg-red-500 transition"
                   aria-label="Eliminar"
                 >
-                  Ã°ÂÂÂ
+                  🗑
                 </button>
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
@@ -160,7 +163,7 @@ export default function ProfileScreen({
             className="aspect-[3/4] rounded-2xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center justify-center text-foreground/40 hover:text-brand-green"
           >
             <span className="text-3xl">+</span>
-            <span className="text-xs font-semibold mt-1">AÃÂ±adir</span>
+            <span className="text-xs font-semibold mt-1">Añadir</span>
           </button>
         </div>
       )}
@@ -171,7 +174,7 @@ export default function ProfileScreen({
           className="w-full p-4 rounded-2xl bg-foreground/5 hover:bg-foreground/10 transition flex items-center justify-between"
         >
           <div className="flex items-center gap-3 text-left">
-            <span className="text-2xl">{darkMode ? "Ã°ÂÂÂ" : "Ã¢ÂÂÃ¯Â¸Â"}</span>
+            <span className="text-2xl">{darkMode ? "🌙" : "☀️"}</span>
             <div>
               <p className="font-bold text-sm">Modo {darkMode ? "oscuro" : "claro"}</p>
               <p className="text-[12px] text-foreground/55">
@@ -185,9 +188,9 @@ export default function ProfileScreen({
         </button>
 
         <div className="p-4 rounded-2xl bg-foreground/5 text-sm text-foreground/70">
-          <p className="font-bold mb-1">Ã°ÂÂÂ¡ Consejo</p>
+          <p className="font-bold mb-1">💡 Consejo</p>
           <p className="text-[13px] leading-relaxed">
-            Cuantos mÃÂ¡s productos subas, mÃÂ¡s matches conseguirÃÂ¡s. Fotos claras y descripciÃÂ³n
+            Cuantos más productos subas, más matches conseguirás. Fotos claras y descripción
             honesta son la clave.
           </p>
         </div>
@@ -198,7 +201,7 @@ export default function ProfileScreen({
               onClick={onSignOut}
               className="w-full p-3 rounded-2xl text-sm font-bold text-foreground/70 hover:bg-foreground/5 transition"
             >
-              Cerrar sesiÃÂ³n
+              Cerrar sesión
             </button>
             <button
               onClick={onDeleteAccount}
@@ -208,10 +211,9 @@ export default function ProfileScreen({
             </button>
           </>
         )}
-      </div>
         <div className="text-center pt-2 pb-1">
           <Link href="/legal" className="text-xs text-foreground/40 hover:text-foreground/60 transition underline underline-offset-2">
-            TÃ©rminos y Privacidad
+            Términos y Privacidad
           </Link>
         </div>
       </div>
