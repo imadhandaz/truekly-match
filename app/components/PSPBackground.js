@@ -29,13 +29,13 @@ export default function PSPBackground() {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
       const ribbons = isDark ? [
-        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(16,185,129,0.20)", lw: H * 0.20 },
-        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(14,165,233,0.16)", lw: H * 0.24 },
-        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(52,211,153,0.13)", lw: H * 0.16 },
+        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(52,211,153,0.55)", glow: "rgba(16,185,129,0.7)",  lw: H * 0.08 },
+        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(56,189,248,0.45)", glow: "rgba(14,165,233,0.65)", lw: H * 0.09 },
+        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(110,231,183,0.40)", glow: "rgba(52,211,153,0.6)", lw: H * 0.07 },
       ] : [
-        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(16,185,129,0.18)", lw: H * 0.20 },
-        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(14,165,233,0.14)", lw: H * 0.24 },
-        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(52,211,153,0.12)", lw: H * 0.16 },
+        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(16,185,129,0.35)", glow: "rgba(16,185,129,0.5)",  lw: H * 0.08 },
+        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(14,165,233,0.30)", glow: "rgba(14,165,233,0.45)", lw: H * 0.09 },
+        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(52,211,153,0.28)", glow: "rgba(52,211,153,0.4)",  lw: H * 0.07 },
       ];
       for (const r of ribbons) {
         const cy = H * r.yFrac + Math.sin(t * r.speed) * H * r.amp;
@@ -47,9 +47,12 @@ export default function PSPBackground() {
         ctx.bezierCurveTo(W * 0.33, cp1, W * 0.66, cp2, W, ey);
         ctx.lineWidth = r.lw;
         ctx.strokeStyle = r.color;
+        ctx.shadowColor = r.glow;
+        ctx.shadowBlur = 60;
         ctx.lineCap = "round";
         ctx.stroke();
       }
+      ctx.shadowBlur = 0;
       t += 0.008;
       rafId = requestAnimationFrame(draw);
     }
@@ -62,7 +65,7 @@ export default function PSPBackground() {
   return (
     <canvas ref={canvasRef} style={{
       position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-      zIndex: 0, pointerEvents: "none",
+      zIndex: -1, pointerEvents: "none",
     }} />
   );
 }
