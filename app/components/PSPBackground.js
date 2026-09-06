@@ -106,19 +106,12 @@ export default function PSPBackground() {
           if (!img?.complete || !img.naturalWidth) return;
           const s = SIZE;
           ctx.save();
-          // outer glow ring
-          ctx.beginPath(); ctx.arc(pt.x, pt.y, s/2+4, 0, Math.PI*2);
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, s/2+3, 0, Math.PI*2);
           ctx.strokeStyle = r.glow; ctx.lineWidth = 2.5;
-          ctx.shadowColor = r.glow; ctx.shadowBlur = 18; ctx.stroke();
+          ctx.shadowColor = r.glow; ctx.shadowBlur = 16; ctx.stroke();
           ctx.shadowBlur = 0;
-          // clip to circle and draw image
           ctx.beginPath(); ctx.arc(pt.x, pt.y, s/2, 0, Math.PI*2); ctx.clip();
           ctx.drawImage(img, pt.x-s/2, pt.y-s/2, s, s);
-          // color tint overlay matching the ribbon
-          ctx.globalCompositeOperation = "color";
-          ctx.fillStyle = r.glow + "55";
-          ctx.fillRect(pt.x-s/2, pt.y-s/2, s, s);
-          ctx.globalCompositeOperation = "source-over";
           ctx.restore();
         });
       });
