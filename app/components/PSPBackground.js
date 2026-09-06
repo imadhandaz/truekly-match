@@ -29,13 +29,15 @@ export default function PSPBackground() {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
       const ribbons = isDark ? [
-        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(52,211,153,0.55)", glow: "rgba(16,185,129,0.7)",  lw: H * 0.08 },
-        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(56,189,248,0.45)", glow: "rgba(14,165,233,0.65)", lw: H * 0.09 },
-        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(110,231,183,0.40)", glow: "rgba(52,211,153,0.6)", lw: H * 0.07 },
+        { yFrac: 0.30, amp: 0.09, speed: 0.55, color: "rgba(52,211,153,0.9)",  glow: "rgba(16,185,129,0.8)",  lw: 2 },
+        { yFrac: 0.50, amp: 0.11, speed: 0.38, color: "rgba(56,189,248,0.85)", glow: "rgba(14,165,233,0.75)", lw: 1.5 },
+        { yFrac: 0.68, amp: 0.07, speed: 0.75, color: "rgba(110,231,183,0.8)", glow: "rgba(52,211,153,0.7)",  lw: 1 },
+        { yFrac: 0.82, amp: 0.06, speed: 0.45, color: "rgba(56,189,248,0.7)",  glow: "rgba(14,165,233,0.6)",  lw: 1 },
       ] : [
-        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(16,185,129,0.35)", glow: "rgba(16,185,129,0.5)",  lw: H * 0.08 },
-        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(14,165,233,0.30)", glow: "rgba(14,165,233,0.45)", lw: H * 0.09 },
-        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(52,211,153,0.28)", glow: "rgba(52,211,153,0.4)",  lw: H * 0.07 },
+        { yFrac: 0.30, amp: 0.09, speed: 0.55, color: "rgba(16,185,129,0.8)",  glow: "rgba(16,185,129,0.6)",  lw: 2 },
+        { yFrac: 0.50, amp: 0.11, speed: 0.38, color: "rgba(14,165,233,0.75)", glow: "rgba(14,165,233,0.55)", lw: 1.5 },
+        { yFrac: 0.68, amp: 0.07, speed: 0.75, color: "rgba(52,211,153,0.7)",  glow: "rgba(52,211,153,0.5)",  lw: 1 },
+        { yFrac: 0.82, amp: 0.06, speed: 0.45, color: "rgba(14,165,233,0.6)",  glow: "rgba(14,165,233,0.45)", lw: 1 },
       ];
       for (const r of ribbons) {
         const cy = H * r.yFrac + Math.sin(t * r.speed) * H * r.amp;
@@ -48,7 +50,7 @@ export default function PSPBackground() {
         ctx.lineWidth = r.lw;
         ctx.strokeStyle = r.color;
         ctx.shadowColor = r.glow;
-        ctx.shadowBlur = 60;
+        ctx.shadowBlur = 18;
         ctx.lineCap = "round";
         ctx.stroke();
       }
