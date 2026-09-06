@@ -8,7 +8,7 @@ export default function PSPBackground() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    let animId;
+    let rafId;
     let t = 0;
 
     function resize() {
@@ -19,50 +19,46 @@ export default function PSPBackground() {
     window.addEventListener("resize", resize);
 
     function draw() {
-      const w = canvas.width;
-      const h = canvas.height;
-      t += 0.0025;
+      const W = canvas.width;
+      const H = canvas.height;
 
-      const bg = ctx.createLinearGradient(0, 0, w * 0.4, h);
+      // Dark teal-to-navy background
+      const bg = ctx.createLinearGradient(0, 0, W, H);
       bg.addColorStop(0, "#062a20");
-      bg.addColorStop(0.4, "#083548");
-      bg.addColorStop(1, "#0e4a62");
+      bg.addColorStop(1, "#071828");
       ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(0, 0, W, H);
 
+      // 3 animated ribbon bezier curves
       const ribbons = [
-        { yBase: 0.18, yThick: 0.13, cp1y: -0.05, cp2y: 0.30, phase: 0,   speed: 0.6, alpha: 0.20 },
-        { yBase: 0.50, yThick: 0.11, cp1y:  0.35, cp2y: 0.62, phase: 1.2, speed: 0.5, alpha: 0.17 },
-        { yBase: 0.80, yThick: 0.10, cp1y:  0.65, cp2y: 0.92, phase: 2.4, speed: 0.7, alpha: 0.13 },
+        { yFrac: 0.38, amp: 0.09, speed: 0.55, color: "rgba(16,185,129,0.20)", lw: H * 0.20 },
+        { yFrac: 0.58, amp: 0.11, speed: 0.38, color: "rgba(14,165,233,0.16)", lw: H * 0.24 },
+        { yFrac: 0.74, amp: 0.07, speed: 0.75, color: "rgba(52,211,153,0.13)", lw: H * 0.16 },
       ];
 
-      ribbons.forEach(function(ribbon) {
-        const breathe = Math.sin(t * ribbon.speed + ribbon.phase) * h * 0.035;
-        const yTop = ribbon.yBase * h + breathe;
-        const yBot = yTop + ribbon.yThick * h;
-        const cy1 = ribbon.cp1y * h + Math.sin(t * ribbon.speed * 0.8 + ribbon.phase) * h * 0.025;
-        const cy2 = ribbon.cp2y * h + Math.sin(t * ribbon.speed * 0.6 + ribbon.phase + 0.5) * h * 0.025;
+      for (const r of ribbons) {
+        const cy  = H * r.yFrac + Math.sin(t * r.speed) * H * r.amp;
+        const cp1 = cy - Math.cos(t * r.speed * 0.7) * H * r.amp * 1.6;
+        const cp2 = cy + Math.sin(t * r.speed * 0.5 + 1) * H * r.amp * 1.3;
+        const ey  = cy + Math.sin(t * r.speed * 0.3 + 2) * H * r.amp;
 
         ctx.beginPath();
-        ctx.moveTo(-w * 0.05, yTop);
-        ctx.bezierCurveTo(w * 0.3, cy1, w * 0.7, cy2, w * 1.05, yTop + breathe * 0.3);
-        ctx.bezierCurveTo(w * 0.7, cy2 + ribbon.yThick * h, w * 0.3, cy1 + ribbon.yThick * h, -w * 0.05, yBot);
-        ctx.closePath();
+        ctx.moveTo(0, cy);
+        ctx.bezierCurveTo(W * 0.33, cp1, W * 0.66, cp2, W, ey);
+        ctx.lineWidth = r.lw;
+        ctx.strokeStyle = r.color;
+        ctx.lineCap = "round";
+        ctx.stroke();
+      }
 
-        const grad = ctx.createLinearGradient(0, yTop, 0, yBot);
-        grad.addColorStop(0, "rgba(255,255,255," + ribbon.alpha + ")");
-        grad.addColorStop(0.4, "rgba(255,255,255," + String(ribbon.alpha * 0.7) + ")");
-        grad.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = grad;
-        ctx.fill();
-      });
-
-      animId = requestAnimationFrame(draw);
+      t += 0.008;
+      rafId = requestAnimationFrame(draw); // loop
     }
-    draw();
 
-    return function cleanup() {
-      cancelAnimationFrame(animId);
+    rafId = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
     };
   }, []);
@@ -70,7 +66,6 @@ export default function PSPBackground() {
   return (
     <canvas
       ref={canvasRef}
-      aria-hidden="true"
       style={{
         position: "fixed",
         top: 0,
