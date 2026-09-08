@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import MatchModal from "./MatchModal";
 import { recordSwipe } from "@/lib/db";
+import Image from "next/image";
 
 const MY_PRODUCT = {
   title: "Tu producto",
@@ -246,10 +247,19 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       className="absolute inset-0 rounded-3xl overflow-hidden bg-white shadow-2xl"
       style={{ transform: `scale(${scale}) translateY(${translateY}px)`, opacity, zIndex: 10 - depth }}
     >
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-[background-image] duration-300"
-        style={{ backgroundImage: `url('${photos[photoIdx]}')` }}
-      />
+      {photos[photoIdx] ? (
+        <Image
+          key={photos[photoIdx]}
+          src={photos[photoIdx]}
+          alt={item?.title || "Producto"}
+          fill
+          style={{ objectFit: "cover" }}
+          sizes="(max-width: 480px) 100vw, 400px"
+          priority={depth === 0}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-green/20 to-brand-blue/20" />
+      )}
 
       {depth === 0 && photos.length > 1 && (
         <div className="absolute top-3 left-3 right-3 flex gap-1 z-20">
