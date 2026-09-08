@@ -22,6 +22,7 @@ import WelcomeScreen from "./components/WelcomeScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
 import AnnouncementBanner from "./components/AnnouncementBanner";
 import NotificationPrompt from "./components/NotificationPrompt";
+import Image from "next/image";
 import { useAuth } from "./context/AuthContext";
 import { getSupabase } from "@/lib/supabase";
 
@@ -757,10 +758,9 @@ function MatchesList({ matches, onOpen }) {
             onClick={() => onOpen(m)}
             className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left"
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${m.photos[0]}')` }}
-            />
+            {m.photos[0] && (
+              <Image src={m.photos[0]} alt={m.title} fill style={{ objectFit: "cover" }} sizes="200px" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
               💬
