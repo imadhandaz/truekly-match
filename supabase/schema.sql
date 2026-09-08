@@ -3,16 +3,9 @@
 -- Run this whole file in Supabase Dashboard → SQL Editor
 -- ============================================================
 --
--- SECURITY NOTE: The `gold` and `verified` fields on profiles MUST NOT be
--- settable by users directly. The current RLS policy allows users to UPDATE
--- their own profile row, which includes these fields. To fix, either:
---   1. Remove those columns from the UPDATE policy using a column-level check:
---      create policy "Users can update own profile (safe fields only)"
---        on public.profiles for update using (auth.uid() = id)
---        with check (gold = (select gold from public.profiles where id = auth.uid())
---                and verified = (select verified from public.profiles where id = auth.uid()));
---   2. Or handle gold/verified via a server-side trigger that rejects client writes
---      (e.g., a BEFORE UPDATE trigger with security definer that ignores those columns).
+-- SECURITY NOTE: The gold and verified fields on profiles MUST NOT be
+-- settable by users directly. The UPDATE policy below uses WITH CHECK
+-- to prevent client-side writes to those columns.
 -- ============================================================
 
 -- =========================
@@ -25,6 +18,7 @@ create table public.profiles (
   neighborhood text default 'Centro',
   verified boolean default false,
   gold boolean default false,
+  boost_credits int default 0,
   created_at timestamptz default now()
 );
 
@@ -33,8 +27,12 @@ alter table public.profiles enable row level security;
 create policy "Profiles are viewable by everyone"
   on public.profiles for select using (true);
 
-create policy "Users can update own profile"
-  on public.profiles for update using (auth.uid() = id);
+create policy "Users can update own profile (safe fields only)"
+  on public.profiles for update using (auth.uid() = id)
+  with check (
+    gold = (select gold from public.profiles where id = auth.uid()) and
+    verified = (select verified from public.profiles where id = auth.uid())
+  );
 
 create policy "Users can insert own profile"
   on public.profiles for insert with check (auth.uid() = id);
@@ -78,7 +76,7 @@ create table public.products (
   description text,
   tags text[] default '{}',
   active boolean default true,
-  boosted_until timestamptz,
+  boosted_at timestamptz,
   created_at timestamptz default now()
 );
 
@@ -123,8 +121,33 @@ create policy "Users can read own swipes"
 create policy "Users can insert own swipes"
   on public.swipes for insert with check (auth.uid() = swiper_id);
 
+create policy "Users can delete own swipes"
+  on public.swipes for delete using (auth.uid() = swiper_id);
+
 -- =========================
--- 4. MATCHES (mutual likes)
+-- 4. BLOCKS
+-- =========================
+create table public.blocks (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid not null references public.profiles(id) on delete cascade,
+  blocked_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique (blocker_id, blocked_id)
+);
+
+alter table public.blocks enable row level security;
+
+create policy "Users can read own blocks"
+  on public.blocks for select using (auth.uid() = blocker_id or auth.uid() = blocked_id);
+
+create policy "Users can insert own blocks"
+  on public.blocks for insert with check (auth.uid() = blocker_id);
+
+create policy "Users can delete own blocks"
+  on public.blocks for delete using (auth.uid() = blocker_id);
+
+-- =========================
+-- 5. MATCHES (mutual likes)
 -- =========================
 create table public.matches (
   id uuid primary key default gen_random_uuid(),
@@ -142,13 +165,13 @@ create policy "Users can read own matches"
   on public.matches for select using (auth.uid() = user_a or auth.uid() = user_b);
 
 -- =========================
--- 5. MESSAGES
+-- 6. MESSAGES
 -- =========================
 create table public.messages (
   id uuid primary key default gen_random_uuid(),
   match_id uuid not null references public.matches(id) on delete cascade,
   sender_id uuid not null references public.profiles(id) on delete cascade,
-  text text not null,
+  text text not null check (char_length(text) <= 2000),
   created_at timestamptz default now()
 );
 
@@ -173,7 +196,7 @@ create policy "Users can send messages in their matches"
   );
 
 -- =========================
--- 6. STORAGE BUCKET for product photos
+-- 7. STORAGE BUCKET for product photos
 -- =========================
 insert into storage.buckets (id, name, public)
 values ('product-photos', 'product-photos', true)
@@ -183,9 +206,13 @@ create policy "Anyone can view product photos"
   on storage.objects for select
   using (bucket_id = 'product-photos');
 
-create policy "Authenticated users can upload product photos"
+create policy "Users can upload to own folder"
   on storage.objects for insert
-  with check (bucket_id = 'product-photos' and auth.role() = 'authenticated');
+  with check (
+    bucket_id = 'product-photos' and
+    auth.role() = 'authenticated' and
+    (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 create policy "Users can delete own product photos"
   on storage.objects for delete
