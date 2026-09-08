@@ -3,13 +3,26 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// No Stripe product setup needed — prices are defined inline
 const PACK_MAP = {
   boost3:  { credits: 3,  amount: 99,  name: "3 Boosts · Truekly Match"  },
   boost10: { credits: 10, amount: 299, name: "10 Boosts · Truekly Match" },
 };
 
+// In-memory rate limiter
+const _rlMap = new Map();
+function rateLimit(ip, maxReq = 5, windowMs = 60_000) {
+  const now = Date.now();
+  const e = _rlMap.get(ip) || { count: 0, start: now };
+  if (now - e.start > windowMs) { _rlMap.set(ip, { count: 1, start: now }); return false; }
+  e.count++;
+  _rlMap.set(ip, e);
+  return e.count > maxReq;
+}
+
 export async function POST(request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  if (rateLimit(ip, 5)) return Response.json({ error: "Demasiadas peticiones" }, { status: 429 });
+
   const authHeader = request.headers.get("authorization") || "";
   const jwt = authHeader.replace(/^Bearer\s+/i, "");
   if (!jwt) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,14 +48,7 @@ export async function POST(request) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
-    line_items: [{
-      quantity: 1,
-      price_data: {
-        currency: "eur",
-        unit_amount: pack.amount,
-        product_data: { name: pack.name },
-      },
-    }],
+    line_items: [{ quantity: 1, price_data: { currency: "eur", unit_amount: pack.amount, product_data: { name: pack.name } } }],
     customer_email: user.email,
     client_reference_id: user.id,
     metadata: { userId: user.id, boostCredits: String(pack.credits) },
