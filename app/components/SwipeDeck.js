@@ -325,7 +325,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
                 if (navigator.share) {
                   navigator.share({ title: item.title, text: `Mira este trueque 🤝`, url });
                 } else {
-                  navigator.clipboard?.writeText(url).then(() => alert("¡Link copiado!"));
+                  navigator.clipboard?.writeText(url).then(() => import("@/lib/toast").then(({ toast }) => toast("¡Link copiado!")));
                 }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-xs text-white/80 hover:bg-white/25 transition"
