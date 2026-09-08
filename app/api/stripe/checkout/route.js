@@ -9,14 +9,24 @@ const PRICE_MAP = {
   year: process.env.STRIPE_PRICE_YEARLY,
 };
 
+// In-memory rate limiter (resets on cold start — sufficient for Vercel serverless)
+const _rlMap = new Map();
+function rateLimit(ip, maxReq = 5, windowMs = 60_000) {
+  const now = Date.now();
+  const e = _rlMap.get(ip) || { count: 0, start: now };
+  if (now - e.start > windowMs) { _rlMap.set(ip, { count: 1, start: now }); return false; }
+  e.count++;
+  _rlMap.set(ip, e);
+  return e.count > maxReq;
+}
+
 export async function POST(request) {
-  // Verify caller via Supabase JWT — never trust userId from the request body
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  if (rateLimit(ip, 5)) return Response.json({ error: "Demasiadas peticiones" }, { status: 429 });
+
   const authHeader = request.headers.get("authorization") || "";
   const jwt = authHeader.replace(/^Bearer\s+/i, "");
-
-  if (!jwt) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!jwt) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -25,18 +35,13 @@ export async function POST(request) {
   );
 
   const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
-  if (authError || !user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (authError || !user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const body = await request.json().catch(() => ({}));
     const planId = body.planId || body.plan || "year";
     const priceId = PRICE_MAP[planId];
-
-    if (!priceId) {
-      return Response.json({ error: "Plan no válido" }, { status: 400 });
-    }
+    if (!priceId) return Response.json({ error: "Plan no válido" }, { status: 400 });
 
     const appUrl =
       request.headers.get("origin") ||
@@ -52,10 +57,7 @@ export async function POST(request) {
       metadata: { userId: user.id },
       success_url: `${appUrl}/?gold=success`,
       cancel_url: `${appUrl}/`,
-      subscription_data: {
-        trial_period_days: 3,
-        metadata: { userId: user.id },
-      },
+      subscription_data: { trial_period_days: 3, metadata: { userId: user.id } },
     });
 
     return Response.json({ url: session.url });
