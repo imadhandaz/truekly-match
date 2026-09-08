@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import MatchModal from "./MatchModal";
 import { recordSwipe } from "@/lib/db";
 import Image from "next/image";
@@ -28,6 +28,33 @@ export default function SwipeDeck({
   const [expanded, setExpanded] = useState(false);
   const [matchedProduct, setMatchedProduct] = useState(null);
   const startRef = useRef({ x: 0, y: 0, t: 0 });
+
+  // Keyboard navigation: ← pass, → like, ↑ super-like
+  const handleKeySwipe = useCallback((choice) => {
+    if (items.length === 0 || index >= items.length) return;
+    if (outOfSwipes) { onUpgrade?.(); return; }
+    const current = items[index];
+    setDecision(choice);
+    setTimeout(() => {
+      setIndex(i => i + 1);
+      setPhotoIdx(0);
+      setDecision(null);
+      setExpanded(false);
+      onSwipe?.(current, choice);
+    }, 300);
+  }, [items, index, outOfSwipes, onUpgrade, onSwipe]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key === "ArrowLeft")  handleKeySwipe("no");
+      if (e.key === "ArrowRight") handleKeySwipe("yes");
+      if (e.key === "ArrowUp")    handleKeySwipe("super");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleKeySwipe]);
+
 
   const current = items[index];
   const next1 = items[index + 1];
