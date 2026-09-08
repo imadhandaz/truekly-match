@@ -16,6 +16,13 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, skipped: "No VAPID keys" });
   }
 
+  // Verify caller is authenticated
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.replace("Bearer ", "").trim();
+  if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const { data: { user: caller }, error: authErr } = await getSupabaseAdmin().auth.getUser(token);
+  if (authErr || !caller) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
   try {
     const { userId, title, body, url } = await request.json();
     if (!userId) return NextResponse.json({ error: "Falta userId" }, { status: 400 });
