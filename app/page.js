@@ -60,6 +60,7 @@ function shapeMatch(match, userId) {
   const ownerProfile = product.profiles || {};
   return {
     id: match.id,
+    other_user_id: isUserA ? match.user_b : match.user_a,
     title: product.title || "",
     photos: product.photos || [],
     wants: product.wants || "",
@@ -100,7 +101,7 @@ function HomeInner() {
   const [showBuyBoosts, setShowBuyBoosts] = useState(false);
   const [activeCat, setActiveCat] = useState("Todo");
 
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading: authLoading } = useAuth();
   const supabase = getSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,7 +136,7 @@ function HomeInner() {
   // Handle ?gold=success after Stripe redirect
   useEffect(() => {
     if (searchParams.get("gold") === "success") {
-      alert("¡Ya eres Gold! ✨ Disfruta de todos los beneficios.");
+      import("@/lib/toast").then(({ toast }) => toast("¡Ya eres Gold! ✨ Disfruta de todos los beneficios."));
       router.replace("/");
     if (searchParams.get("boosts") === "success") {
       const n = searchParams.get("n") || "3";
@@ -382,7 +383,7 @@ function HomeInner() {
     );
   }
 
-  if (!user && !welcomeDismissed) {
+  if (!user && !authLoading && !welcomeDismissed) {
     return (
       <WelcomeScreen
         onSignUp={() => {
