@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SwipeDeck from "./components/SwipeDeck";
 import BottomNav from "./components/BottomNav";
@@ -15,14 +15,12 @@ import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
-import EditProfileModal from "./components/EditProfileModal";
 import MatchModal from "./components/MatchModal";
 import BuyBoostsModal from "./components/BuyBoostsModal";
 import WelcomeScreen from "./components/WelcomeScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
 import AnnouncementBanner from "./components/AnnouncementBanner";
 import NotificationPrompt from "./components/NotificationPrompt";
-import Image from "next/image";
 import { useAuth } from "./context/AuthContext";
 import { getSupabase } from "@/lib/supabase";
 
@@ -67,9 +65,8 @@ function shapeMatch(match, userId) {
     wants: product.wants || "",
     owner: ownerProfile.display_name || ownerProfile.username || "Usuario",
     verified: ownerProfile.verified || false,
-    location: product.neighborhood || "Espaï¿½a",
+    location: `Madrid · ${product.neighborhood || ""}`,
     neighborhood: product.neighborhood || "",
-    other_user_id: isUserA ? match.user_b : match.user_a,
   };
 }
 
@@ -94,18 +91,16 @@ function HomeInner() {
   const [authMode, setAuthMode] = useState("signin");
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [unreadChats, setUnreadChats] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [showBuyBoosts, setShowBuyBoosts] = useState(false);
-  const [activeCat, setActiveCat] = useState("Todo");
 
   const { user, profile, signOut, loading: authLoading } = useAuth();
   const supabase = getSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const promptedProfileRef = useRef(false);
 
   // Restore UI prefs from localStorage
   useEffect(() => {
@@ -139,11 +134,11 @@ function HomeInner() {
     if (searchParams.get("gold") === "success") {
       import("@/lib/toast").then(({ toast }) => toast("¡Ya eres Gold! ✨ Disfruta de todos los beneficios."));
       router.replace("/");
+    }
     if (searchParams.get("boosts") === "success") {
       const n = searchParams.get("n") || "3";
-      alert(`${n} boosts añadidos! 🚀`);
+      import("@/lib/toast").then(({ toast }) => toast(`¡${n} boosts añadidos a tu cuenta! 🚀`));
       router.replace("/");
-    }
     }
   }, [searchParams, router]);
 
@@ -185,6 +180,16 @@ function HomeInner() {
       .maybeSingle();
     const myProdId = myProd?.id || null;
     setMyProductId(myProdId);
+
+    // Profile completion prompt — shown once per session if user has no products
+    if (!myProd && !promptedProfileRef.current) {
+      promptedProfileRef.current = true;
+      setTimeout(() => {
+        import("@/lib/toast").then(({ toast }) =>
+          toast("📦 Sube tu primer producto para empezar a hacer matches")
+        );
+      }, 2500);
+    }
 
     // Fetch IDs the user already swiped
     const { data: swipedRows } = await supabase
@@ -236,7 +241,6 @@ function HomeInner() {
     setMyProducts(myProdsData || []);
 
     // Fetch likes (who swiped yes/super on user's product)
-    // NOTE: requires an RLS policy allowing users to read swipes on their own products
     if (myProdId) {
       const { data: likesData } = await supabase
         .from("swipes")
@@ -253,22 +257,6 @@ function HomeInner() {
       );
     }
   };
-
-  // Subscribe to new messages to track unread count
-  useEffect(() => {
-    if (!user || matches.length === 0) return;
-    const matchIds = new Set(matches.map((m) => m.id));
-    const ch = supabase
-      .channel("unread-msgs-" + user.id)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-        const msg = payload.new;
-        if (msg.sender_id !== user.id && matchIds.has(msg.match_id)) {
-          setUnreadChats((c) => c + 1);
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [user?.id, matches.length]);
 
   const handleSwipe = async (product, choice) => {
     setSwipeCount((c) => c + 1);
@@ -310,24 +298,11 @@ function HomeInner() {
 
         // Show match modal
         setMatchModalCard({ ...product, matchId: newMatch?.id });
-
-        // Push notification to the matched user
-        fetch("/api/push/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: product.owner_id,
-            title: "\u{1F91D} \u{00A1}Nuevo match en Truekly!",
-            body: (profile?.display_name || "Alguien") + " quiere hacer un trueque contigo",
-            url: "/",
-          }),
-        }).catch(() => {});
       }
     }
   };
 
   const handleSaveProduct = (product) => {
-    // Re-fetch after upload so myProductId and myProducts are up to date
     if (user) fetchAll(user.id);
     setShowUpload(false);
     setActiveTab("profile");
@@ -362,7 +337,6 @@ function HomeInner() {
   const parseKm = (s) => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
 
   const filteredProducts = products.filter((p) => {
-    if (activeCat !== "Todo" && p.category !== activeCat) return false;
     if (filters.cats.length > 0 && !filters.cats.includes(p.category)) return false;
     if (p.distance && parseKm(p.distance) > filters.maxKm) return false;
     if (filters.verifiedOnly && !p.verified) return false;
@@ -403,10 +377,10 @@ function HomeInner() {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen pb-24">
-      <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-white/80 border-b border-black/5">
+      <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg" style={{background:"linear-gradient(135deg,#10b981,#0ea5e9)",boxShadow:"0 4px 16px rgba(14,165,233,0.35)"}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-blue/30">
+            T
           </div>
           <div>
             <h1 className="font-black text-lg leading-none bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
@@ -448,11 +422,10 @@ function HomeInner() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12" style={{background:"linear-gradient(180deg,rgba(16,185,129,0.035) 0%,rgba(14,165,233,0.05) 100%)"}}>
+      <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
         {activeTab === "discover" && (
           <>
             <AnnouncementBanner onSlideClick={() => {}} />
-            <CategoryTabs active={activeCat} onChange={setActiveCat} />
             {loaded && myProducts.length === 0 && (
               <button
                 onClick={() => setShowUpload(true)}
@@ -535,7 +508,8 @@ function HomeInner() {
             myProducts={myProducts}
             onAdd={() => (user ? setShowUpload(true) : setShowAuth(true))}
             onDelete={handleDeleteProduct}
-            onBoost={() => openGold("El Boost es exclusivo de Truekly Gold")}
+            onBoost={handleBoost}
+            onBuyBoosts={() => setShowBuyBoosts(true)}
             darkMode={darkMode}
             onToggleDark={() => setDarkMode((d) => !d)}
             verified={profile?.verified || false}
@@ -545,20 +519,17 @@ function HomeInner() {
             onSignOut={signOut}
             onSignIn={() => setShowAuth(true)}
             onDeleteAccount={() => setShowDeleteAccount(true)}
-            onEdit={() => setShowEditProfile(true)}
+            isGold={isGold}
+            boostCredits={profile?.boost_credits ?? 0}
           />
         )}
       </main>
 
       <BottomNav
         active={activeTab}
-        onChange={(tab) => {
-          setActiveTab(tab);
-          if (tab === "chats") setUnreadChats(0);
-        }}
+        onChange={setActiveTab}
         matchCount={matches.length}
         likesCount={likes.length}
-        unreadChats={unreadChats}
       />
 
       {showUpload && (
@@ -619,17 +590,8 @@ function HomeInner() {
         />
       )}
 
-      {showEditProfile && user && (
-        <EditProfileModal
-          user={user}
-          profile={profile}
-          onClose={() => setShowEditProfile(false)}
-          onSaved={() => { setShowEditProfile(false); fetchAll(user.id); }}
-        />
-      )}
-
       <InstallPrompt />
-        <NotificationPrompt userId={user?.id} />
+      <NotificationPrompt userId={user?.id} />
 
       {showAuth && (
         <AuthModal onClose={() => setShowAuth(false)} mode={authMode} />
@@ -666,52 +628,15 @@ export default function Home() {
   );
 }
 
-const DISCOVER_CATS = [
-  { id: "Todo", emoji: "🌐", label: "Todo" },
-  { id: "Móvil", emoji: "📱", label: "Móviles" },
-  { id: "Consola", emoji: "🎮", label: "Consolas" },
-  { id: "Portátil", emoji: "💻", label: "Portátiles" },
-  { id: "Vehículo", emoji: "🚗", label: "Vehículos" },
-  { id: "Vivienda", emoji: "🏠", label: "Vivienda" },
-  { id: "Equipo", emoji: "⚽", label: "Equipos" },
-  { id: "Movilidad", emoji: "🛴", label: "Movilidad" },
-  { id: "Ropa", emoji: "👗", label: "Moda" },
-  { id: "Hogar", emoji: "🏡", label: "Hogar" },
-  { id: "Cámara", emoji: "📷", label: "Cámaras" },
-  { id: "Otro", emoji: "📦", label: "Otros" },
-];
-
-function CategoryTabs({ active, onChange }) {
-  return (
-    <div className="w-full max-w-sm mb-3 -mx-1">
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1" style={{scrollbarWidth:"none"}}>
-        {DISCOVER_CATS.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => onChange(cat.id)}
-            className={`flex-none flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition ${
-              active === cat.id
-                ? "bg-brand-green text-white shadow-lg"
-                : "bg-foreground/5 text-foreground/70 hover:bg-foreground/10"
-            }`}
-          >
-            <span className="text-base">{cat.emoji}</span>
-            <span className="text-[9px] font-bold whitespace-nowrap">{cat.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function SkeletonDeck() {
   return (
     <div className="w-full max-w-sm mx-auto animate-pulse" style={{ aspectRatio: "3/4.6" }}>
       <div className="w-full h-full rounded-3xl bg-foreground/8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent animate-shimmer" />
         <div className="absolute bottom-0 left-0 right-0 p-5 space-y-3">
-          <div className="h-8 w-2/3 rounded-full bg-foreground/10" />
-          <div className="h-4 w-1/3 rounded-full bg-foreground/8" />
-          <div className="h-16 rounded-2xl bg-foreground/8" />
+          <div className="h-8 w-2/3 rounded-full bg-white/20" />
+          <div className="h-4 w-1/3 rounded-full bg-white/15" />
+          <div className="h-16 rounded-2xl bg-white/10" />
         </div>
       </div>
     </div>
@@ -758,9 +683,10 @@ function MatchesList({ matches, onOpen }) {
             onClick={() => onOpen(m)}
             className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left"
           >
-            {m.photos[0] && (
-              <Image src={m.photos[0]} alt={m.title} fill style={{ objectFit: "cover" }} sizes="200px" />
-            )}
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url('${m.photos[0]}')` }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
               💬
@@ -774,4 +700,4 @@ function MatchesList({ matches, onOpen }) {
       </div>
     </div>
   );
-}
+    }
