@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import MatchModal from "./MatchModal";
-import { recordSwipe } from "@/lib/db";
-import Image from "next/image";
 
 const MY_PRODUCT = {
   title: "Tu producto",
@@ -28,33 +26,6 @@ export default function SwipeDeck({
   const [expanded, setExpanded] = useState(false);
   const [matchedProduct, setMatchedProduct] = useState(null);
   const startRef = useRef({ x: 0, y: 0, t: 0 });
-
-  // Keyboard navigation: ← pass, → like, ↑ super-like
-  const handleKeySwipe = useCallback((choice) => {
-    if (items.length === 0 || index >= items.length) return;
-    if (outOfSwipes) { onUpgrade?.(); return; }
-    const current = items[index];
-    setDecision(choice);
-    setTimeout(() => {
-      setIndex(i => i + 1);
-      setPhotoIdx(0);
-      setDecision(null);
-      setExpanded(false);
-      onSwipe?.(current, choice);
-    }, 300);
-  }, [items, index, outOfSwipes, onUpgrade, onSwipe]);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-      if (e.key === "ArrowLeft")  handleKeySwipe("no");
-      if (e.key === "ArrowRight") handleKeySwipe("yes");
-      if (e.key === "ArrowUp")    handleKeySwipe("super");
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [handleKeySwipe]);
-
 
   const current = items[index];
   const next1 = items[index + 1];
@@ -109,21 +80,32 @@ export default function SwipeDeck({
       return;
     }
 
-    // Haptic feedback
-    if (navigator.vibrate) {
-      if (choice === "super") navigator.vibrate([30, 20, 60]);
-      else if (choice === "yes") navigator.vibrate(30);
-      else navigator.vibrate(15);
-    }
-
     setDecision(choice);
     onSwipe?.(current, choice);
 
     const positive = choice === "yes" || choice === "super";
 
+    // Llama a la API con límite de swipes server-side
     const swipePromise =
       positive && userId && current?.id
-        ? recordSwipe(userId, current.id, choice).catch(() => null)
+        ? (async () => {
+            try {
+              const { getSupabase } = await import("@/lib/supabase");
+              const { data: { session } } = await getSupabase().auth.getSession();
+              if (!session?.access_token) return null;
+              const res = await fetch("/api/swipe", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ productId: current.id, choice }),
+              });
+              if (res.status === 429) { onUpgrade?.(); return null; }
+              const data = await res.json();
+              return data.matchId || null;
+            } catch { return null; }
+          })()
         : Promise.resolve(null);
 
     setTimeout(() => {
@@ -143,7 +125,6 @@ export default function SwipeDeck({
         }
 
         if (shouldMatch) {
-          if (navigator.vibrate) navigator.vibrate([50, 30, 80, 30, 120]);
           const matchData = { ...current, matchId: matchId || null };
           setMatchedProduct(matchData);
           onMatch?.(matchData);
@@ -274,19 +255,10 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       className="absolute inset-0 rounded-3xl overflow-hidden bg-white shadow-2xl"
       style={{ transform: `scale(${scale}) translateY(${translateY}px)`, opacity, zIndex: 10 - depth }}
     >
-      {photos[photoIdx] ? (
-        <Image
-          key={photos[photoIdx]}
-          src={photos[photoIdx]}
-          alt={item?.title || "Producto"}
-          fill
-          style={{ objectFit: "cover" }}
-          sizes="(max-width: 480px) 100vw, 400px"
-          priority={depth === 0}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-green/20 to-brand-blue/20" />
-      )}
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-[background-image] duration-300"
+        style={{ backgroundImage: `url('${photos[photoIdx]}')` }}
+      />
 
       {depth === 0 && photos.length > 1 && (
         <div className="absolute top-3 left-3 right-3 flex gap-1 z-20">
@@ -385,4 +357,4 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       </div>
     </div>
   );
-}
+  }
