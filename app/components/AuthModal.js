@@ -108,8 +108,10 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
           {isReset ? (
             <>
               <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white text-2xl font-black shadow-xl">
-                  T
+                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center shadow-xl">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
                 <h3 className="text-xl font-black">¿Olvidaste tu contraseña?</h3>
                 <p className="text-sm text-foreground/60 mt-1">
@@ -159,8 +161,10 @@ export default function AuthModal({ onClose, mode: initialMode = "signin" }) {
           ) : (
             <>
               <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white text-2xl font-black shadow-xl">
-                  T
+                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center shadow-xl">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
                 <h3 className="text-xl font-black">
                   {isSignup ? "Únete a Truekly Match" : "Bienvenido de vuelta"}
@@ -300,4 +304,4 @@ function GoogleIcon() {
       <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
     </svg>
   );
-}
+              }
