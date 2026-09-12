@@ -23,7 +23,7 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
     setStep("review");
     setTimeout(() => {
       setStep("done");
-      setTimeout(() => onVerified(), 1500);
+      setTimeout(() => onVerified?.(), 1500);
     }, 2500);
   };
 
@@ -42,9 +42,13 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
             <span className="text-brand-blue">✓</span>
             Verifica tu identidad
           </h2>
-          <span className="text-xs text-foreground/40 font-mono">
-            {STEPS.indexOf(step) + 1}/{STEPS.length}
-          </span>
+          {step !== "done" && step !== "review" ? (
+            <span className="text-xs text-foreground/40 font-mono">
+              {STEPS.indexOf(step) + 1}/{STEPS.length}
+            </span>
+          ) : (
+            <span />
+          )}
         </div>
 
         <div className="px-6 py-6">
@@ -58,18 +62,15 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
                 Los perfiles verificados reciben <b>3× más matches</b> y generan
                 confianza al cerrar trueques.
               </p>
-
               <div className="space-y-3 text-left mb-7">
                 <Step icon="📸" title="Foto de tu DNI/NIE" desc="Ambos lados, sobre fondo claro" />
                 <Step icon="🤳" title="Selfie" desc="Para comprobar que es tu cara" />
                 <Step icon="⚡" title="Listo en 1 minuto" desc="Revisión instantánea con IA" />
               </div>
-
               <p className="text-[11px] text-foreground/45 mb-4 leading-relaxed">
                 🔒 Tus documentos se procesan y se borran al instante. No los almacenamos.
                 Cumplimos con el RGPD.
               </p>
-
               <button
                 onClick={() => setStep("id")}
                 className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-green to-brand-blue text-white font-bold text-lg shadow-lg hover:scale-[1.02] transition"
@@ -85,7 +86,6 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
               <p className="text-sm text-foreground/65 mb-5">
                 Haz una foto clara del frente (lado con tu foto)
               </p>
-
               <button
                 onClick={() => idRef.current?.click()}
                 className={`w-full aspect-[1.6] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center mb-5 transition overflow-hidden relative ${
@@ -102,21 +102,12 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
                   </>
                 )}
               </button>
-              <input
-                ref={idRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFile(setIdPhoto, e)}
-                className="hidden"
-              />
-
+              <input ref={idRef} type="file" accept="image/*" onChange={(e) => handleFile(setIdPhoto, e)} className="hidden" />
               <button
                 onClick={() => setStep("selfie")}
                 disabled={!idPhoto}
                 className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transition ${
-                  idPhoto
-                    ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.01]"
-                    : "bg-foreground/20 cursor-not-allowed"
+                  idPhoto ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.01]" : "bg-foreground/20 cursor-not-allowed"
                 }`}
               >
                 Siguiente →
@@ -130,7 +121,6 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
               <p className="text-sm text-foreground/65 mb-5">
                 Mira a la cámara, sin gafas de sol ni gorra
               </p>
-
               <button
                 onClick={() => selfieRef.current?.click()}
                 className={`w-full aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center mb-5 transition overflow-hidden relative ${
@@ -147,22 +137,12 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
                   </>
                 )}
               </button>
-              <input
-                ref={selfieRef}
-                type="file"
-                accept="image/*"
-                capture="user"
-                onChange={(e) => handleFile(setSelfie, e)}
-                className="hidden"
-              />
-
+              <input ref={selfieRef} type="file" accept="image/*" capture="user" onChange={(e) => handleFile(setSelfie, e)} className="hidden" />
               <button
                 onClick={startReview}
                 disabled={!selfie}
                 className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transition ${
-                  selfie
-                    ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.01]"
-                    : "bg-foreground/20 cursor-not-allowed"
+                  selfie ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.01]" : "bg-foreground/20 cursor-not-allowed"
                 }`}
               >
                 Enviar para verificación
@@ -175,9 +155,7 @@ export default function VerifyIdentityModal({ onClose, onVerified }) {
               <div className="w-20 h-20 mx-auto mb-5 rounded-full border-4 border-brand-blue border-t-transparent animate-spin" />
               <h3 className="text-xl font-bold mb-2">Comprobando tu identidad...</h3>
               <p className="text-foreground/60 text-sm">
-                Nuestra IA está comparando tu DNI con el selfie.
-                <br />
-                Esto tarda 1-3 segundos.
+                Nuestra IA está comparando tu DNI con el selfie.<br />Esto tarda 1-3 segundos.
               </p>
             </div>
           )}
