@@ -46,6 +46,122 @@ h1, h2, h3 {
   font-family: var(--font-jakarta), var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* Blob background */
+@keyframes blob-drift-1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  25%  { transform: translate(40px, -60px) scale(1.08); }
+  50%  { transform: translate(-30px, 30px) scale(0.94); }
+  75%  { transform: translate(20px, 50px) scale(1.05); }
+}
+@keyframes blob-drift-2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  30%  { transform: translate(-50px, 40px) scale(1.1); }
+  60%  { transform: translate(40px, -30px) scale(0.92); }
+  80%  { transform: translate(-20px, -40px) scale(1.06); }
+}
+@keyframes blob-drift-3 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  20%  { transform: translate(60px, 20px) scale(0.95); }
+  50%  { transform: translate(-20px, -50px) scale(1.12); }
+  80%  { transform: translate(30px, 40px) scale(0.97); }
+}
+.blob-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.blob-bg > div { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.55; }
+.dark .blob-bg > div { opacity: 0.35; }
+.blob-1 { width: 480px; height: 480px; top: -140px; left: -100px; background: radial-gradient(circle, rgba(16,185,129,0.55), rgba(14,165,233,0.2)); animation: blob-drift-1 12s ease-in-out infinite; }
+.blob-2 { width: 400px; height: 400px; bottom: 60px; right: -80px; background: radial-gradient(circle, rgba(14,165,233,0.5), rgba(16,185,129,0.15)); animation: blob-drift-2 16s ease-in-out infinite; }
+.blob-3 { width: 320px; height: 320px; bottom: -60px; left: 25%; background: radial-gradient(circle, rgba(52,211,153,0.4), rgba(56,189,248,0.2)); animation: blob-drift-3 10s ease-in-out infinite; }
+
+/* Core animations */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.6); } 60% { opacity: 1; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-ring { 0% { transform: scale(0.7); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes bounce-in { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 70% { transform: scale(0.95); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(100vh) rotate(var(--r, 360deg)); opacity: 0; } }
+@keyframes matchPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+/* Micro-interaction animations */
+@keyframes float { 0% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-10px) scale(1.05); } 100% { transform: translateY(0px) scale(1); } }
+@keyframes glow-pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); } 70% { box-shadow: 0 0 0 14px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+@keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.7; } }
+@keyframes shimmer-btn { 0% { transform: translateX(-100%) skewX(-15deg); opacity: 0; } 40% { opacity: 1; } 60% { opacity: 1; } 100% { transform: translateX(200%) skewX(-15deg); opacity: 0; } }
+@keyframes tab-pop { 0% { transform: scale(0.85); opacity: 0; } 65% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+/* Utility classes */
+.animate-fadeIn       { animation: fadeIn 200ms ease-out both; }
+.animate-fadeInUp     { animation: fadeInUp 300ms ease-out both; }
+.animate-popIn        { animation: popIn 500ms cubic-bezier(0.2, 1.4, 0.5, 1) both; }
+.animate-slideInRight { animation: slideInRight 250ms ease-out both; }
+.animate-slideInUp    { animation: slideInUp 350ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-bounceIn     { animation: bounce-in 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.animate-float        { animation: float 3s ease-in-out infinite; }
+.animate-spin-slow    { animation: spin 3s linear infinite; }
+.animate-tab-pop      { animation: tab-pop 300ms cubic-bezier(0.2, 1.4, 0.5, 1) both; }
+
+.skeleton { background: linear-gradient(90deg, var(--foreground) 0%, rgba(0,0,0,0.04) 50%, var(--foreground) 100%); background-size: 200% 100%; opacity: 0.08; animation: shimmer 1.5s ease-in-out infinite; }
+
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+.toast { animation: fadeInUp 300ms ease-out both, fadeIn 300ms 2700ms reverse both; }
+@import "tailwindcss";
+
+:root {
+  --background: #f0fdf4;
+  --foreground: #042f2e;
+  --brand-green: #10b981;
+  --brand-green-dark: #047857;
+  --brand-blue: #0ea5e9;
+  --brand-blue-dark: #0369a1;
+}
+
+.dark {
+  --background: #0a1612;
+  --foreground: #e6fff5;
+  --brand-green: #34d399;
+  --brand-green-dark: #6ee7b7;
+  --brand-blue: #38bdf8;
+  --brand-blue-dark: #7dd3fc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-green: var(--brand-green);
+  --color-brand-green-dark: var(--brand-green-dark);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-dark: var(--brand-blue-dark);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-jakarta);
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-jakarta), var(--font-geist-sans), system-ui, sans-serif;
+}
+
 /* ── Blob background animations ───────────────────────────── */
 
 @keyframes blob-drift-1 {
