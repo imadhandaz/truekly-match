@@ -69,7 +69,10 @@ export default function RootLayout({ children }) {
           <div className="blob-2" />
           <div className="blob-3" />
         </div>
-        <AuthProvider>{children}</AuthProvider>
+        {/* Content sits above blobs */}
+        <div className="relative z-10 flex flex-col flex-1 min-h-screen">
+          <AuthProvider>{children}</AuthProvider>
+        </div>
       </body>
     </html>
   );
