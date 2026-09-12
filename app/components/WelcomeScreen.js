@@ -13,8 +13,8 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#fff" }}>
 
-      {/* ===== FOTO GRANDE — ocupa ~76% de la pantalla ===== */}
-      <div className="relative flex-none overflow-hidden" style={{ height: "76vh" }}>
+      {/* ===== FOTO GRANDE — ocupa ~68% de la pantalla ===== */}
+      <div className="relative flex-none overflow-hidden" style={{ height: "68vh" }}>
         {/* Foto: dos personas juntas, warm & lifestyle */}
         <img
           src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=900&h=1400&fit=crop&crop=faces,center"
@@ -27,37 +27,21 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
         <div className="absolute bottom-0 left-0 right-0" style={{ height: "30%", background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))" }} />
 
         {/* Degradado oscuro arriba para el logo */}
-        <div className="absolute top-0 left-0 right-0" style={{ height: "40%", background: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)" }} />
+        <div className="absolute top-0 left-0 right-0" style={{ height: "35%", background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
 
-        {/* ===== LOGO CENTRADO SOBRE LA FOTO ===== */}
+        {/* ===== LOGO CENTRADO SOBRE LA FOTO (como Muzz) ===== */}
         <div
           className="absolute top-0 left-0 right-0 flex flex-col items-center"
           style={{ paddingTop: "14%", opacity: loaded ? 1 : 0, transition: "opacity 0.6s ease 0.3s" }}
         >
-          {/* Icono — flechas de intercambio bidireccional */}
-          <div
-            className="w-16 h-16 rounded-3xl flex items-center justify-center mb-3"
-            style={{
-              background: "linear-gradient(135deg,#10b981,#0ea5e9)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.15)",
-            }}
-          >
+          {/* Icono */}
+          <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg,#10b981,#0ea5e9)", boxShadow: "0 8px 32px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.15)" }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span
-            className="text-white font-black text-5xl tracking-tight"
-            style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif", textShadow: "0 2px 16px rgba(0,0,0,0.4)" }}
-          >
-            Truekly
-          </span>
-          <span
-            className="text-white/75 text-sm font-semibold mt-2 tracking-widest uppercase"
-            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)", letterSpacing: "0.18em" }}
-          >
-            Dale nueva vida a tus cosas
-          </span>
+          <span className="text-white font-black text-5xl tracking-tight" style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif", textShadow: "0 2px 16px rgba(0,0,0,0.4)" }}>Truekly</span>
+          <span className="text-white/75 text-sm font-semibold mt-2 tracking-widest uppercase" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)", letterSpacing: "0.18em" }}>Dale nueva vida a tus cosas</span>
         </div>
 
         {/* Badges de intercambio sobre la foto (abajo) */}
@@ -75,7 +59,7 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
 
           <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#10b981,#059669)", boxShadow: "0 4px 16px rgba(16,185,129,0.5)" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
 
@@ -120,4 +104,4 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
       </div>
     </div>
   );
-          }
+        }
