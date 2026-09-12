@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SwipeDeck from "./components/SwipeDeck";
-import BottomNav from "./components/BottomNav";
+// BottomNav replaced by inline PremiumTabBar below
 import UploadProductForm from "./components/UploadProductForm";
 import ProfileScreen from "./components/ProfileScreen";
 import ChatScreen from "./components/ChatScreen";
@@ -527,7 +527,7 @@ function HomeInner() {
         )}
       </main>
 
-      <BottomNav
+      <PremiumTabBar
         active={activeTab}
         onChange={setActiveTab}
         matchCount={matches.length}
@@ -703,3 +703,152 @@ function MatchesList({ matches, onOpen }) {
     </div>
   );
     }
+
+
+/* ══════════════════════════════════════════════════════════
+   PREMIUM TAB BAR — floating glass pill, iOS-style
+══════════════════════════════════════════════════════════ */
+const TAB_CONFIG = [
+  {
+    id: "discover",
+    label: "Descubrir",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <path d="M21 21l-4.35-4.35" />
+      </svg>
+    ),
+  },
+  {
+    id: "likes",
+    label: "Likes",
+    hasBadge: true,
+    badgeKey: "likesCount",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={active ? 0 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
+  },
+  {
+    id: "matches",
+    label: "Matches",
+    hasBadge: true,
+    badgeKey: "matchCount",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    id: "chats",
+    label: "Chats",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={active ? 0 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "profile",
+    label: "Perfil",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={active ? 0 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+  },
+];
+
+function PremiumTabBar({ active, onChange, matchCount, likesCount }) {
+  const counts = { matchCount, likesCount };
+
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-30 flex justify-center"
+      style={{ padding: "0 16px max(16px, env(safe-area-inset-bottom, 16px))" }}
+    >
+      <div
+        className="w-full max-w-sm flex items-stretch rounded-[28px] px-1.5 py-1.5"
+        style={{
+          background: "rgba(var(--background-rgb, 240,253,244), 0.55)",
+          backdropFilter: "blur(28px) saturate(160%)",
+          WebkitBackdropFilter: "blur(28px) saturate(160%)",
+          border: "1px solid rgba(255,255,255,0.45)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
+        }}
+      >
+        {TAB_CONFIG.map((tab) => {
+          const isActive = active === tab.id;
+          const badge = tab.hasBadge ? counts[tab.badgeKey] : 0;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onChange(tab.id)}
+              className="flex-1 flex flex-col items-center justify-center relative transition-all"
+              style={{ minHeight: 54, paddingTop: 6, paddingBottom: 6 }}
+            >
+              {isActive && (
+                <div
+                  className="absolute inset-x-0.5 inset-y-0 rounded-[20px]"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(14,165,233,0.12) 100%)",
+                    border: "1px solid rgba(16,185,129,0.3)",
+                    boxShadow: "0 2px 10px rgba(16,185,129,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
+                    animation: "tab-pop 280ms cubic-bezier(0.2,1.4,0.5,1) both",
+                  }}
+                />
+              )}
+              <div className="relative z-10">
+                <div
+                  style={{
+                    color: isActive ? "#10b981" : "var(--foreground)",
+                    opacity: isActive ? 1 : 0.38,
+                    transition: "color 0.2s ease, opacity 0.2s ease, transform 0.2s ease",
+                    transform: isActive ? "scale(1.1)" : "scale(1)",
+                    filter: isActive ? "drop-shadow(0 0 5px rgba(16,185,129,0.45))" : "none",
+                  }}
+                >
+                  {tab.icon(isActive)}
+                </div>
+                {badge > 0 && (
+                  <div
+                    className="absolute flex items-center justify-center rounded-full"
+                    style={{
+                      top: -4, right: -6,
+                      minWidth: 16, height: 16,
+                      paddingLeft: badge > 9 ? 4 : 0,
+                      paddingRight: badge > 9 ? 4 : 0,
+                      background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+                      fontSize: 9, fontWeight: 800, color: "white",
+                      boxShadow: "0 2px 8px rgba(16,185,129,0.55), 0 0 0 2px rgba(255,255,255,0.9)",
+                      animation: "popIn 400ms cubic-bezier(0.2,1.4,0.5,1) both",
+                    }}
+                  >
+                    {badge > 9 ? "9+" : badge}
+                  </div>
+                )}
+              </div>
+              <span
+                className="relative z-10 mt-1 leading-none font-semibold"
+                style={{
+                  fontSize: 10,
+                  color: isActive ? "#10b981" : "var(--foreground)",
+                  opacity: isActive ? 1 : 0.38,
+                  transition: "color 0.2s ease, opacity 0.2s ease",
+                  fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+                }}
+              >
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
