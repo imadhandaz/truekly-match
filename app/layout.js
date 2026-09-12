@@ -1,7 +1,6 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
-import PSPBackground from "./components/PSPBackground";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -11,6 +10,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const jakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata = {
@@ -55,13 +60,16 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${jakartaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col" style={{ background: "#062a20" }}>
-        <PSPBackground />
-        <div className="relative flex flex-col flex-1" style={{ zIndex: 1 }}>
-          <AuthProvider>{children}</AuthProvider>
+      <body className="min-h-full flex flex-col">
+        {/* Animated blob background */}
+        <div className="blob-bg" aria-hidden="true">
+          <div className="blob-1" />
+          <div className="blob-2" />
+          <div className="blob-3" />
         </div>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
