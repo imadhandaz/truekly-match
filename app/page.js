@@ -379,8 +379,10 @@ function HomeInner() {
     <div className="flex flex-col flex-1 min-h-screen pb-24">
       <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-blue/30">
-            T
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center shadow-lg shadow-brand-blue/30">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
           <div>
             <h1 className="font-black text-lg leading-none bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
