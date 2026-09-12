@@ -33,7 +33,7 @@ export default function ChatList({ chats, matches, onOpen }) {
           <button
             key={match.id}
             onClick={() => onOpen(match)}
-            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-white/70 hover:bg-white shadow-sm hover:shadow-md transition text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-background/80 dark:bg-foreground/5 border border-foreground/5 hover:bg-background hover:border-foreground/10 shadow-sm hover:shadow-md transition text-left"
           >
             <div
               className="w-14 h-14 rounded-full bg-cover bg-center border-2 border-brand-green shrink-0 shadow"
