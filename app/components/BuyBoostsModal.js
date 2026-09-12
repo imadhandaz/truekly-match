@@ -44,7 +44,7 @@ export default function BuyBoostsModal({ currentCredits = 0, onClose }) {
             </p>
           ) : (
             <p className="text-sm text-foreground/60 mt-1">
-              Sin boosts disponibles — elige un pack para volver al top
+              Sin boosts disponibles — elige un pack para seguir subiendo al top
             </p>
           )}
         </div>
@@ -61,8 +61,8 @@ export default function BuyBoostsModal({ currentCredits = 0, onClose }) {
               disabled={!!loading}
               className={`relative w-full p-4 rounded-2xl border-2 text-left transition hover:scale-[1.01] active:scale-95 disabled:opacity-60 ${
                 pack.popular
-                  ? "border-brand-green bg-gradient-to-r from-brand-green/8 to-brand-blue/8"
-                  : "border-foreground/10 hover:bg-foreground/3"
+                  ? "border-brand-green bg-gradient-to-r from-brand-green/10 to-brand-blue/10"
+                  : "border-foreground/10 hover:bg-foreground/5"
               }`}
             >
               {pack.popular && (
@@ -89,11 +89,14 @@ export default function BuyBoostsModal({ currentCredits = 0, onClose }) {
             </button>
           ))}
 
-          <button onClick={onClose} className="w-full py-2 text-sm text-foreground/40 hover:text-foreground/60 transition">
+          <button
+            onClick={onClose}
+            className="w-full py-2 text-sm text-foreground/40 hover:text-foreground/60 transition"
+          >
             Cerrar
           </button>
         </div>
       </div>
     </div>
   );
-}
+    }
