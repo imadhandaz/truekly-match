@@ -30,8 +30,12 @@
   --font-display: var(--font-jakarta);
 }
 
-body {
+html {
   background: var(--background);
+}
+
+body {
+  background: transparent;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
@@ -77,11 +81,11 @@ h1, h2, h3 {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.55;
+  opacity: 0.65;
 }
 
 .dark .blob-bg > div {
-  opacity: 0.35;
+  opacity: 0.45;
 }
 
 .blob-1 {
@@ -89,7 +93,7 @@ h1, h2, h3 {
   height: 480px;
   top: -140px;
   left: -100px;
-  background: radial-gradient(circle, rgba(16,185,129,0.55), rgba(14,165,233,0.2));
+  background: radial-gradient(circle, rgba(16,185,129,0.65), rgba(14,165,233,0.25));
   animation: blob-drift-1 12s ease-in-out infinite;
 }
 
@@ -98,7 +102,7 @@ h1, h2, h3 {
   height: 400px;
   bottom: 60px;
   right: -80px;
-  background: radial-gradient(circle, rgba(14,165,233,0.5), rgba(16,185,129,0.15));
+  background: radial-gradient(circle, rgba(14,165,233,0.6), rgba(16,185,129,0.2));
   animation: blob-drift-2 16s ease-in-out infinite;
 }
 
@@ -107,7 +111,7 @@ h1, h2, h3 {
   height: 320px;
   bottom: -60px;
   left: 25%;
-  background: radial-gradient(circle, rgba(52,211,153,0.4), rgba(56,189,248,0.2));
+  background: radial-gradient(circle, rgba(52,211,153,0.5), rgba(56,189,248,0.25));
   animation: blob-drift-3 10s ease-in-out infinite;
 }
 
@@ -196,4 +200,4 @@ h1, h2, h3 {
 /* Toast */
 .toast {
   animation: fadeInUp 300ms ease-out both, fadeIn 300ms 2700ms reverse both;
-  }
+}
