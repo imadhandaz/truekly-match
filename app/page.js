@@ -110,7 +110,9 @@ function HomeInner() {
         const data = JSON.parse(raw);
         setDarkMode(!!data.darkMode);
         setFilters(data.filters || { cats: [], maxKm: 50, verifiedOnly: false });
-        setSwipeCount(data.swipeCount || 0);
+        // Reset swipe count daily
+        const today = new Date().toISOString().slice(0, 10);
+        setSwipeCount(data.swipeDate === today ? (data.swipeCount || 0) : 0);
       }
       if (!localStorage.getItem("truekly_onboarded")) setShowOnboarding(true);
     } catch {}
@@ -121,7 +123,15 @@ function HomeInner() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(UI_LS_KEY, JSON.stringify({ darkMode, filters, swipeCount }));
+      localStorage.setItem(
+        UI_LS_KEY,
+        JSON.stringify({
+          darkMode,
+          filters,
+          swipeCount,
+          swipeDate: new Date().toISOString().slice(0, 10),
+        })
+      );
     } catch {}
   }, [darkMode, filters, swipeCount, loaded]);
 
@@ -153,6 +163,27 @@ function HomeInner() {
       return;
     }
     fetchAll(user.id);
+  }, [user?.id]);
+
+  // Realtime: new matches
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`realtime-matches-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "matches", filter: `user_b=eq.${user.id}` },
+        async (payload) => {
+          const { data: nd } = await supabase.from("matches")
+            .select(`id, user_a, user_b, product_a, product_b, created_at,
+               product_b_data:products!product_b(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified)),
+               product_a_data:products!product_a(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified))`)
+            .eq("id", payload.new.id).single();
+          if (nd) {
+            setMatches((prev) => prev.some((m) => m.id === nd.id) ? prev : [shapeMatch(nd, user.id), ...prev]);
+            import("@/lib/toast").then(({ toast }) => toast("¡Nuevo match! 💚 Alguien quiere hacer trueque contigo"));
+          }
+        }
+      ).subscribe();
+    return () => supabase.removeChannel(channel);
   }, [user?.id]);
 
   const fetchPublicProducts = async (userId) => {
@@ -259,47 +290,37 @@ function HomeInner() {
   };
 
   const handleSwipe = async (product, choice) => {
-    setSwipeCount((c) => c + 1);
     if (!user) return;
-
-    await supabase.from("swipes").insert({
-      swiper_id: user.id,
-      product_id: product.id,
-      choice,
-    });
-
-    // Remove from deck immediately
     setProducts((ps) => ps.filter((p) => p.id !== product.id));
-
-    // Real match detection for positive swipes
-    if ((choice === "yes" || choice === "super") && myProductId) {
-      const { data: mutual } = await supabase
-        .from("swipes")
-        .select("id")
-        .eq("swiper_id", product.owner_id)
-        .eq("product_id", myProductId)
-        .in("choice", ["yes", "super"])
-        .maybeSingle();
-
-      if (mutual) {
-        const { data: newMatch } = await supabase
-          .from("matches")
-          .insert({
-            user_a: user.id,
-            user_b: product.owner_id,
-            product_a: myProductId,
-            product_b: product.id,
-          })
-          .select("id")
-          .maybeSingle();
-
-        // Refresh matches list
-        fetchAll(user.id);
-
-        // Show match modal
-        setMatchModalCard({ ...product, matchId: newMatch?.id });
+    setSwipeCount((c) => c + 1);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/swipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId: product.id, choice }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "limit") setSwipeCount(FREE_DAILY_SWIPES);
+        return;
       }
-    }
+      const { matchId } = await res.json();
+      if (matchId && (choice === "yes" || choice === "super")) {
+        const { data: newMatchData } = await supabase.from("matches")
+          .select(`id, user_a, user_b, product_a, product_b, created_at,
+             product_b_data:products!product_b(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified)),
+             product_a_data:products!product_a(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified))`)
+          .eq("id", matchId).single();
+        if (newMatchData) {
+          const shaped = shapeMatch(newMatchData, user.id);
+          setMatches((prev) => (prev.some((m) => m.id === matchId) ? prev : [shaped, ...prev]));
+          setMatchModalCard({ ...product, matchId });
+        }
+      }
+    } catch (err) { console.error("Swipe error:", err); }
   };
 
   const handleSaveProduct = (product) => {
@@ -503,7 +524,7 @@ function HomeInner() {
           <MatchesList matches={matches} onOpen={openChatFor} />
         )}
         {activeTab === "chats" && (
-          <ChatList chats={{}} matches={matches} onOpen={openChatFor} />
+          <ChatMatchList matches={matches} onOpen={openChatFor} />
         )}
         {activeTab === "profile" && (
           <ProfileScreen
@@ -632,19 +653,19 @@ export default function Home() {
 
 function SkeletonDeck() {
   return (
-    <div className="w-full max-w-sm mx-auto animate-pulse" style={{ aspectRatio: "3/4.6" }}>
-      <div className="w-full h-full rounded-3xl bg-foreground/8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent animate-shimmer" />
+    <div className="w-full max-w-sm mx-auto" style={{ aspectRatio: "3/4.6" }}>
+      <div className="w-full h-full relative overflow-hidden" style={{ borderRadius: 28, background: "linear-gradient(160deg, rgba(16,185,129,0.06) 0%, rgba(14,165,233,0.04) 100%)", border: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)", animation: "shimmer-btn 2s ease-in-out infinite" }} />
         <div className="absolute bottom-0 left-0 right-0 p-5 space-y-3">
-          <div className="h-8 w-2/3 rounded-full bg-white/20" />
-          <div className="h-4 w-1/3 rounded-full bg-white/15" />
-          <div className="h-16 rounded-2xl bg-white/10" />
+          <div className="h-7 w-2/3 rounded-2xl" style={{ background: "rgba(255,255,255,0.08)" }} />
+          <div className="h-4 w-1/3 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
+          <div className="h-14 rounded-2xl" style={{ background: "rgba(255,255,255,0.04)" }} />
         </div>
+        <div className="absolute top-4 left-4 right-4 h-[55%] rounded-2xl" style={{ background: "rgba(255,255,255,0.05)" }} />
       </div>
     </div>
   );
 }
-
 function IconButton({ children, label, onClick, highlight, active }) {
   let cls = "bg-white/70 hover:bg-white backdrop-blur border-foreground/5";
   if (highlight) cls = "bg-gradient-to-br from-brand-green to-brand-blue text-white border-transparent hover:scale-110 shadow-brand-blue/30 shadow-lg";
@@ -661,53 +682,72 @@ function IconButton({ children, label, onClick, highlight, active }) {
 }
 
 function MatchesList({ matches, onOpen }) {
-  if (matches.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center py-20">
-        <div className="text-7xl mb-4 opacity-70">💚</div>
-        <h2 className="text-2xl font-bold mb-2">Sin matches todavía</h2>
-        <p className="text-foreground/60 max-w-xs">
-          Sigue descubriendo productos para encontrar trueques
-        </p>
-      </div>
-    );
-  }
-
+  if (!matches.length) return (
+    <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
+      <div className="w-24 h-24 rounded-full flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.15))", border: "1px solid rgba(16,185,129,0.25)", boxShadow: "0 8px 32px rgba(16,185,129,0.12)" }}><span style={{ fontSize: 44 }}>💚</span></div>
+      <h2 className="text-2xl font-black mb-2" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Sin matches todavía</h2>
+      <p className="text-sm max-w-xs" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.6 }}>Sigue descubriendo productos y dale like a los que te interesen para hacer trueques</p>
+    </div>
+  );
   return (
-    <div className="w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-5 bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
-        Tus matches ({matches.length})
-      </h2>
+    <div className="w-full max-w-md animate-fadeIn">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-black" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Tus matches</h2>
+        <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.15))", border: "1px solid rgba(16,185,129,0.3)", color: "#10b981" }}>{matches.length}</span>
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        {matches.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => onOpen(m)}
-            className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-lg hover:scale-[1.02] transition text-left"
-          >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${m.photos[0]}')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <div className="absolute top-2 right-2 bg-white/95 rounded-full w-7 h-7 flex items-center justify-center text-sm shadow">
-              💬
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-              <p className="font-bold text-sm leading-tight">{m.title}</p>
-              <p className="text-[11px] text-white/80">{m.owner}</p>
+        {matches.map((m, i) => (
+          <button key={m.id} onClick={() => onOpen(m)} className="relative overflow-hidden text-left active:scale-95 transition-transform" style={{ aspectRatio: "3/4", borderRadius: 20, boxShadow: "0 8px 28px rgba(0,0,0,0.22)", animation: `fadeIn 0.4s ease ${i * 0.06}s both` }}>
+            {m.photos[0] ? <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${m.photos[0]}')` }} /> : <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1a2e26, #0f1f19)" }} />}
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%)" }} />
+            {m.verified && <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.9)", backdropFilter: "blur(8px)" }}><svg width="9" height="9" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg><span className="text-white font-black" style={{ fontSize: 8 }}>Verificado</span></div>}
+            <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.95)", boxShadow: "0 2px 12px rgba(16,185,129,0.5)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <p className="font-black text-white text-sm leading-tight mb-0.5" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>{m.title}</p>
+              <p className="text-white/70 font-medium" style={{ fontSize: 11 }}>{m.owner}</p>
+              {m.neighborhood && <p className="text-white/50 mt-0.5" style={{ fontSize: 10 }}>📍 {m.neighborhood}</p>}
             </div>
           </button>
         ))}
       </div>
     </div>
   );
-    }
+}
+
+function ChatMatchList({ matches, onOpen }) {
+  if (!matches.length) return (
+    <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
+      <div className="w-24 h-24 rounded-full flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(16,185,129,0.15))", border: "1px solid rgba(14,165,233,0.25)", boxShadow: "0 8px 32px rgba(14,165,233,0.12)" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+      <h2 className="text-2xl font-black mb-2" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Sin conversaciones</h2>
+      <p className="text-sm max-w-xs" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.6 }}>Cuando hagas match podrás chatear aquí</p>
+    </div>
+  );
+  return (
+    <div className="w-full max-w-md animate-fadeIn">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-black" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Chats</h2>
+        <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(16,185,129,0.15))", border: "1px solid rgba(14,165,233,0.3)", color: "#0ea5e9" }}>{matches.length}</span>
+      </div>
+      <div className="space-y-2">
+        {matches.map((m, i) => (
+          <button key={m.id} onClick={() => onOpen(m)} className="w-full flex items-center gap-3 p-3 rounded-2xl text-left active:scale-[0.98] transition-all" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", animation: `fadeIn 0.35s ease ${i * 0.05}s both` }}>
+            <div className="w-14 h-14 rounded-2xl shrink-0 relative overflow-hidden" style={{ background: m.photos[0] ? undefined : "linear-gradient(135deg, #1a2e26, #0f1f19)", backgroundImage: m.photos[0] ? `url('${m.photos[0]}')` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
+              {m.verified && <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "#10b981", border: "1.5px solid rgba(0,0,0,0.5)" }}><svg width="7" height="7" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg></div>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-0.5"><p className="font-black text-sm truncate" style={{ color: "var(--foreground)", fontFamily: "var(--font-jakarta), system-ui" }}>{m.owner}</p><span className="text-[10px] shrink-0 ml-2" style={{ color: "rgba(255,255,255,0.25)" }}>Match</span></div>
+              <p className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.5)" }}>{m.title}</p>
+              <p className="text-[11px] truncate mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>Toca para iniciar el trueque 💬</p>
+            </div>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 
-/* ══════════════════════════════════════════════════════════
-   PREMIUM TAB BAR — floating glass pill, iOS-style
-══════════════════════════════════════════════════════════ */
 const TAB_CONFIG = [
   {
     id: "discover",
