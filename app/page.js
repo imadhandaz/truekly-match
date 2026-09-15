@@ -18,9 +18,7 @@ import DeleteAccountModal from "./components/DeleteAccountModal";
 import MatchModal from "./components/MatchModal";
 import BuyBoostsModal from "./components/BuyBoostsModal";
 import WelcomeScreen from "./components/WelcomeScreen";
-import OnboardingScreen from "./components/OnboardingScreen";
 import AnnouncementBanner from "./components/AnnouncementBanner";
-import NotificationPrompt from "./components/NotificationPrompt";
 import { useAuth } from "./context/AuthContext";
 import { getSupabase } from "@/lib/supabase";
 
@@ -888,6 +886,99 @@ function PremiumTabBar({ active, onChange, matchCount, likesCount }) {
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Inline: NotificationPrompt ───────────────────────────────────────────────
+function NotificationPrompt({ userId }) {
+  const [show, setShow] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted" || Notification.permission === "denied") return;
+    try { if (localStorage.getItem("truekly_notif_dismissed")) return; } catch {}
+    const t = setTimeout(() => setShow(true), 6000);
+    return () => clearTimeout(t);
+  }, [userId]);
+
+  const handleAllow = async () => {
+    setShow(false);
+    try { await Notification.requestPermission(); } catch {}
+  };
+  const handleDismiss = () => {
+    setShow(false);
+    setDismissed(true);
+    try { localStorage.setItem("truekly_notif_dismissed", "1"); } catch {}
+  };
+
+  if (!show || dismissed) return null;
+  return (
+    <div className="fixed bottom-24 left-4 right-4 z-40 animate-slideInUp" style={{ maxWidth: 420, margin: "0 auto" }}>
+      <div className="relative overflow-hidden rounded-2xl p-4" style={{ background: "linear-gradient(135deg,rgba(10,22,18,0.97),rgba(5,14,11,0.98))", border: "1px solid rgba(16,185,129,0.25)", boxShadow: "0 8px 40px rgba(0,0,0,0.5)", backdropFilter: "blur(20px)" }}>
+        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right,transparent,rgba(16,185,129,0.5),rgba(14,165,233,0.4),transparent)" }} />
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-white text-sm mb-0.5">No te pierdas tus matches!</p>
+            <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>Activa notificaciones para saber cuando alguien quiere hacer trueque contigo.</p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button onClick={handleDismiss} className="flex-1 py-2.5 rounded-xl text-sm font-semibold active:scale-95" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" }}>Ahora no</button>
+          <button onClick={handleAllow} className="flex-1 py-2.5 rounded-xl text-sm font-black text-white active:scale-95" style={{ background: "linear-gradient(135deg,#10b981,#059669)", boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}>Activar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inline: OnboardingScreen ─────────────────────────────────────────────────
+const ONBOARDING_STEPS = [
+  { emoji: "🔄", grad: "linear-gradient(135deg,#10b981,#059669)", title: "Truekea lo que no usas", sub: "Intercambia tus objetos con personas cercanas. Sin dinero, sin complicaciones." },
+  { emoji: "👆", grad: "linear-gradient(135deg,#0ea5e9,#0284c7)", title: "Desliza y conecta", sub: "Desliza a la derecha si quieres truekear algo. Si os gustais mutuamente es un match!" },
+  { emoji: "💬", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)", title: "Habla y queda", sub: "Chatea con tu match, poneos de acuerdo y quedais para hacer el trueque en persona." },
+  { emoji: "⭐", grad: "linear-gradient(135deg,#f59e0b,#d97706)", title: "Valora tu experiencia!", sub: "Despues del trueque, valora al otro usuario para construir una comunidad de confianza." },
+];
+function OnboardingScreen({ onDone }) {
+  const [step, setStep] = useState(0);
+  const s = ONBOARDING_STEPS[step];
+  const isLast = step === ONBOARDING_STEPS.length - 1;
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between" style={{ background: "#0a1612" }}>
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%)" }} />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle,rgba(14,165,233,0.06),transparent 70%)" }} />
+      </div>
+      <div className="pt-14 pb-4 text-center relative z-10">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm" style={{ background: "linear-gradient(135deg,#10b981,#0ea5e9)" }}>T</div>
+          <span className="text-white font-black text-xl" style={{ fontFamily: "var(--font-jakarta),system-ui", letterSpacing: "-0.03em" }}>Truekly</span>
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-8 relative z-10 w-full max-w-sm">
+        <div className="w-28 h-28 rounded-full flex items-center justify-center mb-8" style={{ background: s.grad, boxShadow: "0 16px 48px rgba(0,0,0,0.4)", fontSize: 56, transition: "all 0.4s" }}>{s.emoji}</div>
+        <h2 className="text-3xl font-black text-white text-center mb-4 leading-tight" style={{ fontFamily: "var(--font-jakarta),system-ui", letterSpacing: "-0.03em" }}>{s.title}</h2>
+        <p className="text-center leading-relaxed" style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, maxWidth: 300 }}>{s.sub}</p>
+      </div>
+      <div className="w-full max-w-sm px-6 pb-12 relative z-10">
+        <div className="flex justify-center gap-2 mb-6">
+          {ONBOARDING_STEPS.map((_, i) => (
+            <button key={i} onClick={() => setStep(i)} style={{ width: i === step ? 24 : 8, height: 8, borderRadius: 4, background: i === step ? "#10b981" : "rgba(255,255,255,0.2)", transition: "all 0.3s", border: "none", cursor: "pointer" }} />
+          ))}
+        </div>
+        <button onClick={() => isLast ? onDone() : setStep(s => s + 1)} className="w-full py-4 rounded-2xl font-black text-white text-lg relative overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.98]" style={{ background: s.grad, boxShadow: "0 8px 32px rgba(16,185,129,0.4)", fontFamily: "var(--font-jakarta),system-ui" }}>
+          {isLast ? "Empezar a truekear!" : "Siguiente"}
+        </button>
+        {!isLast && <button onClick={onDone} className="w-full py-3 text-sm font-semibold transition-opacity hover:opacity-70 mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>Saltar</button>}
       </div>
     </div>
   );
