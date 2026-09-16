@@ -86,56 +86,27 @@ export default function SwipeDeck({
 
     const positive = choice === "yes" || choice === "super";
 
-    const swipePromise =
-      positive && userId && current?.id
-        ? (async () => {
-            try {
-              const { getSupabase } = await import("@/lib/supabase");
-              const { data: { session } } = await getSupabase().auth.getSession();
-              if (!session?.access_token) return null;
-              const res = await fetch("/api/swipe", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({ productId: current.id, choice }),
-              });
-              if (res.status === 429) { onUpgrade?.(); return null; }
-              const data = await res.json();
-              return data.matchId || null;
-            } catch { return null; }
-          })()
-        : Promise.resolve(null);
-
+    // Logged-in users: the parent (onSwipe) owns the real API call + match
+    // detection + modal. Only show a local teaser match here for signed-out
+    // guests browsing without an account, so they get a taste of the flow.
     setTimeout(() => {
-      swipePromise.then((matchId) => {
-        let shouldMatch = false;
-
-        if (positive) {
-          if (userId) {
-            shouldMatch = matchId !== null;
-          } else {
-            const chance =
-              choice === "super"
-                ? Math.min(1, (current.matchChance || 0.5) + 0.3)
-                : current.matchChance || 0.5;
-            shouldMatch = Math.random() < chance;
-          }
-        }
-
-        if (shouldMatch) {
-          const matchData = { ...current, matchId: matchId || null };
+      if (positive && !userId) {
+        const chance =
+          choice === "super"
+            ? Math.min(1, (current.matchChance || 0.5) + 0.3)
+            : current.matchChance || 0.5;
+        if (Math.random() < chance) {
+          const matchData = { ...current, matchId: null };
           setMatchedProduct(matchData);
           onMatch?.(matchData);
         }
+      }
 
-        setIndex((i) => i + 1);
-        setPhotoIdx(0);
-        setExpanded(false);
-        setDrag({ x: 0, y: 0 });
-        setDecision(null);
-      });
+      setIndex((i) => i + 1);
+      setPhotoIdx(0);
+      setExpanded(false);
+      setDrag({ x: 0, y: 0 });
+      setDecision(null);
     }, 250);
   };
 
@@ -416,6 +387,22 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
                 ))}
               </div>
             )}
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                const url = `https://truekly-match.vercel.app/p/${item.id}`;
+                if (navigator.share) {
+                  navigator.share({ title: item.title, text: `Mira este trueque 🤝`, url });
+                } else {
+                  navigator.clipboard?.writeText(url).then(() => import("@/lib/toast").then(({ toast }) => toast("¡Link copiado!")));
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-white/80 hover:bg-white/20 transition border border-white/20"
+              style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)" }}
+            >
+              🔗 Compartir
+            </button>
           </div>
         )}
 
@@ -440,4 +427,4 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       </div>
     </div>
   );
-            }
+}
