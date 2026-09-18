@@ -394,3 +394,35 @@ function Bubble({ mine, text, time }) {
     </div>
   );
 }
+
+function parseTradeOffer(text) {
+  if (!text?.startsWith("__TRADE__:")) return null;
+  try { return JSON.parse(text.slice(10)); } catch { return null; }
+}
+
+function TradeOfferBubble({ mine, data, time }) {
+  return (
+    <div className={`flex ${mine ? "justify-end" : "justify-start"} animate-fadeIn my-2`}>
+      <div
+        className="max-w-[82%] rounded-3xl overflow-hidden shadow-lg"
+        style={{ border: "1.5px solid rgba(16,185,129,0.35)", background: mine ? "rgba(16,185,129,0.08)" : "rgba(14,165,233,0.06)" }}
+      >
+        <div className="px-4 py-2 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ background: "rgba(16,185,129,0.14)", borderBottom: "1px solid rgba(16,185,129,0.2)", color: "#10b981" }}>
+          🤝 Propuesta de trueque
+        </div>
+        <div className="px-4 py-3 space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">{mine ? "Ofrezco" : "Ofrece"}</span>
+            <span className="text-sm font-bold text-foreground truncate">{data.from}</span>
+          </div>
+          <div className="flex items-center gap-2"><div className="w-14 shrink-0 flex justify-center"><span className="text-brand-green text-lg">⇅</span></div><div className="flex-1 h-px bg-foreground/10" /></div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">{mine ? "Por tu" : "Por mi"}</span>
+            <span className="text-sm font-bold text-foreground truncate">{data.to}</span>
+          </div>
+        </div>
+        <p className="text-[10px] text-foreground/30 px-4 pb-3 text-right">{time}</p>
+      </div>
+    </div>
+  );
+}
