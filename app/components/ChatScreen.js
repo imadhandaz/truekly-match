@@ -39,6 +39,37 @@ export default function ChatScreen({ match, onBack }) {
   const [showReview, setShowReview] = useState(false);
   const [traded, setTraded] = useState(false);
   const scrollRef = useRef(null);
+    const sendTradeOffer = async () => {
+    if (!user || sending) return;
+    const offerData = { from: match.my_title || "Mi producto", to: match.title, ts: Date.now() };
+    setShowTradeProposal(false);
+    await send(null, `__TRADE__:${JSON.stringify(offerData)}`);
+  };
+
+          <button
+          type="button"
+          onClick={() => setShowTradeProposal((v) => !v)}
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90"
+          style={{ background: showTradeProposal ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.12)", border: `1.5px solid ${showTradeProposal ? "rgba(16,185,129,0.7)" : "rgba(16,185,129,0.35)"}`, color: "#10b981", fontSize: "18px" }}
+          aria-label="Proponer trueque"
+        >
+          🤝
+        </button>
+      {showTradeProposal && (
+        <div className="mx-3 mb-2 rounded-2xl overflow-hidden shadow-xl animate-fadeIn" style={{ border: "1.5px solid rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.06)" }}>
+          <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "rgba(16,185,129,0.12)", borderBottom: "1px solid rgba(16,185,129,0.2)" }}>
+            <span className="text-[11px] font-black uppercase tracking-widest text-brand-green">Propuesta de trueque</span>
+            <button onClick={() => setShowTradeProposal(false)} className="text-foreground/40 hover:text-foreground text-lg leading-none">×</button>
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            <div className="flex items-center gap-2.5"><span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">Ofrezco</span><span className="text-sm font-bold truncate">{match.my_title || "Mi producto"}</span></div>
+            <div className="flex items-center gap-2"><span className="text-brand-green text-lg w-14 text-center">⇅</span><div className="flex-1 h-px bg-foreground/10" /></div>
+            <div className="flex items-center gap-2.5"><span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">Por tu</span><span className="text-sm font-bold truncate">{match.title}</span></div>
+          </div>
+          <div className="px-4 pb-3"><button onClick={sendTradeOffer} className="w-full py-2.5 rounded-xl text-sm font-black text-white" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>Enviar propuesta 🤝</button></div>
+        </div>
+      )}
+        const inputRef = useRef(n, msgTextull);
   const inputRef = useRef(null);
   const { user } = useAuth();
   const supabase = getSupabase();
@@ -426,3 +457,4 @@ function TradeOfferBubble({ mine, data, time }) {
     </div>
   );
 }
+  const [showTradeProposal, setShowTradeProposal] = useState(false);
