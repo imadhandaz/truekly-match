@@ -54,6 +54,9 @@ function shapeMatch(match, userId) {
   const product = isUserA
     ? match.product_b_data || match.products || {}
     : match.product_a_data || match.products || {};
+  const myProduct = isUserA
+    ? match.product_a_data || {}
+    : match.product_b_data || {};
   const ownerProfile = product.profiles || {};
   return {
     id: match.id,
@@ -63,8 +66,11 @@ function shapeMatch(match, userId) {
     wants: product.wants || "",
     owner: ownerProfile.display_name || ownerProfile.username || "Usuario",
     verified: ownerProfile.verified || false,
-    location: `Madrid · ${product.neighborhood || ""}`,
+    location: "Madrid · " + (product.neighborhood || ""),
     neighborhood: product.neighborhood || "",
+    status: match.status || "active",
+    my_title: myProduct.title || "",
+    my_product_id: myProduct.id || null,
   };
 }
 
