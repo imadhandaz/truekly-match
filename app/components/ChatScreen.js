@@ -38,38 +38,8 @@ export default function ChatScreen({ match, onBack }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [traded, setTraded] = useState(false);
+  const [showTradeProposal, setShowTradeProposal] = useState(false);
   const scrollRef = useRef(null);
-    const sendTradeOffer = async () => {
-    if (!user || sending) return;
-    const offerData = { from: match.my_title || "Mi producto", to: match.title, ts: Date.now() };
-    setShowTradeProposal(false);
-    await send(null, `__TRADE__:${JSON.stringify(offerData)}`);
-  };
-
-          <button
-          type="button"
-          onClick={() => setShowTradeProposal((v) => !v)}
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90"
-          style={{ background: showTradeProposal ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.12)", border: `1.5px solid ${showTradeProposal ? "rgba(16,185,129,0.7)" : "rgba(16,185,129,0.35)"}`, color: "#10b981", fontSize: "18px" }}
-          aria-label="Proponer trueque"
-        >
-          🤝
-        </button>
-      {showTradeProposal && (
-        <div className="mx-3 mb-2 rounded-2xl overflow-hidden shadow-xl animate-fadeIn" style={{ border: "1.5px solid rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.06)" }}>
-          <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "rgba(16,185,129,0.12)", borderBottom: "1px solid rgba(16,185,129,0.2)" }}>
-            <span className="text-[11px] font-black uppercase tracking-widest text-brand-green">Propuesta de trueque</span>
-            <button onClick={() => setShowTradeProposal(false)} className="text-foreground/40 hover:text-foreground text-lg leading-none">×</button>
-          </div>
-          <div className="px-4 py-3 space-y-2">
-            <div className="flex items-center gap-2.5"><span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">Ofrezco</span><span className="text-sm font-bold truncate">{match.my_title || "Mi producto"}</span></div>
-            <div className="flex items-center gap-2"><span className="text-brand-green text-lg w-14 text-center">⇅</span><div className="flex-1 h-px bg-foreground/10" /></div>
-            <div className="flex items-center gap-2.5"><span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">Por tu</span><span className="text-sm font-bold truncate">{match.title}</span></div>
-          </div>
-          <div className="px-4 pb-3"><button onClick={sendTradeOffer} className="w-full py-2.5 rounded-xl text-sm font-black text-white" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>Enviar propuesta 🤝</button></div>
-        </div>
-      )}
-        const inputRef = useRef(n, msgTextull);
   const inputRef = useRef(null);
   const { user } = useAuth();
   const supabase = getSupabase();
@@ -161,6 +131,17 @@ export default function ChatScreen({ match, onBack }) {
     send();
   };
 
+  const sendTradeOffer = async () => {
+    if (!user || sending) return;
+    const offerData = {
+      from: match.my_title || "Mi producto",
+      to: match.title,
+      ts: Date.now(),
+    };
+    setShowTradeProposal(false);
+    await send(`__TRADE__:${JSON.stringify(offerData)}`);
+  };
+
   const markAsTraded = async () => {
     setMenuOpen(false);
     if (!user) return;
@@ -196,7 +177,6 @@ export default function ChatScreen({ match, onBack }) {
     }).catch(() => toast("Ya tienes bloqueado a este usuario.", "warning"));
   };
 
-  // Group messages by date
   const groupedMessages = messages.reduce((acc, msg) => {
     const label = formatDateLabel(msg.created_at);
     if (!acc.length || acc[acc.length - 1].label !== label) {
@@ -211,7 +191,6 @@ export default function ChatScreen({ match, onBack }) {
 
   return (
     <div className="fixed inset-0 z-30 bg-background flex flex-col">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-2xl border-b border-foreground/8 px-4 py-3 flex items-center gap-3">
         <button
           onClick={onBack}
@@ -307,15 +286,51 @@ export default function ChatScreen({ match, onBack }) {
         </div>
       )}
 
-      {/* Trade context strip */}
       <div className="px-4 py-3 border-b border-foreground/6" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.07), rgba(14,165,233,0.07))" }}>
         <p className="text-[10px] uppercase tracking-widest text-brand-green-dark font-black mb-1">Trueque propuesto</p>
         <p className="text-sm">
-          <b>{match.title}</b> <span className="text-foreground/55">por</span> <b>{match.wants || "algo tuyo"}</b>
+          <b>{match.my_title || "Tu producto"}</b> <span className="text-foreground/55">por</span> <b>{match.title}</b>
         </p>
       </div>
 
-      {/* Messages area */}
+      {showTradeProposal && (
+        <div
+          className="mx-3 mt-2 rounded-2xl overflow-hidden shadow-xl animate-fadeIn"
+          style={{ border: "1.5px solid rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.06)" }}
+        >
+          <div
+            className="px-4 py-2.5 flex items-center justify-between"
+            style={{ background: "rgba(16,185,129,0.12)", borderBottom: "1px solid rgba(16,185,129,0.2)" }}
+          >
+            <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#10b981" }}>Propuesta de trueque</span>
+            <button onClick={() => setShowTradeProposal(false)} className="text-foreground/40 hover:text-foreground text-lg leading-none">×</button>
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">Ofrezco</span>
+              <span className="text-sm font-bold truncate">{match.my_title || "Mi producto"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span style={{ color: "#10b981" }} className="text-lg w-14 text-center">⇅</span>
+              <div className="flex-1 h-px bg-foreground/10" />
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] text-foreground/45 uppercase tracking-wider font-black w-14 shrink-0">Por tu</span>
+              <span className="text-sm font-bold truncate">{match.title}</span>
+            </div>
+          </div>
+          <div className="px-4 pb-3">
+            <button
+              onClick={sendTradeOffer}
+              className="w-full py-2.5 rounded-xl text-sm font-black text-white"
+              style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}
+            >
+              Enviar propuesta 🤝
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-5"
@@ -328,7 +343,6 @@ export default function ChatScreen({ match, onBack }) {
             </div>
             <p className="font-semibold text-base mb-1">Match con <span className="font-black">{match.owner}</span></p>
             <p className="text-foreground/40 text-sm mb-6">¡Rompe el hielo y propón el trueque!</p>
-            {/* Quick reply chips */}
             <div className="flex flex-wrap gap-2 justify-center max-w-xs mx-auto">
               {QUICK_REPLIES.map((qr) => (
                 <button
@@ -351,16 +365,20 @@ export default function ChatScreen({ match, onBack }) {
           <div className="space-y-1">
             {groupedMessages.map((group) => (
               <div key={group.label}>
-                {/* Date separator */}
                 <div className="flex items-center gap-3 my-4">
                   <div className="flex-1 h-px bg-foreground/8" />
                   <span className="text-[10px] font-semibold text-foreground/35 uppercase tracking-wider">{group.label}</span>
                   <div className="flex-1 h-px bg-foreground/8" />
                 </div>
                 <div className="space-y-1.5">
-                  {group.msgs.map((m) => (
-                    <Bubble key={m.id} mine={m.sender_id === user?.id} text={m.text} time={formatTime(m.created_at)} />
-                  ))}
+                  {group.msgs.map((m) => {
+                    const tradeData = parseTradeOffer(m.text);
+                    return tradeData ? (
+                      <TradeOfferBubble key={m.id} mine={m.sender_id === user?.id} data={tradeData} time={formatTime(m.created_at)} />
+                    ) : (
+                      <Bubble key={m.id} mine={m.sender_id === user?.id} text={m.text} time={formatTime(m.created_at)} />
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -368,8 +386,21 @@ export default function ChatScreen({ match, onBack }) {
         )}
       </div>
 
-      {/* Input bar */}
       <form onSubmit={handleSubmit} className="sticky bottom-0 bg-background/97 backdrop-blur-2xl border-t border-foreground/8 px-3 py-3 flex items-center gap-2.5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}>
+        <button
+          type="button"
+          onClick={() => setShowTradeProposal((v) => !v)}
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition active:scale-90"
+          style={{
+            background: showTradeProposal ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.12)",
+            border: `1.5px solid ${showTradeProposal ? "rgba(16,185,129,0.7)" : "rgba(16,185,129,0.35)"}`,
+            color: "#10b981",
+            fontSize: "18px",
+          }}
+          aria-label="Proponer trueque"
+        >
+          🤝
+        </button>
         <input
           ref={inputRef}
           value={text}
@@ -457,4 +488,3 @@ function TradeOfferBubble({ mine, data, time }) {
     </div>
   );
 }
-  const [showTradeProposal, setShowTradeProposal] = useState(false);
