@@ -271,6 +271,11 @@ input:focus, textarea:focus, select:focus {
   animation: fadeInUp 300ms ease-out both, fadeIn 300ms 2700ms reverse both;
 }
 
+/* Safe-area utilities for iOS notch / home indicator */
+.pb-safe  { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe  { padding-top: env(safe-area-inset-top, 0px); }
+.mb-safe  { margin-bottom: env(safe-area-inset-bottom, 0px); }
+
 /* ── Scroll behavior ──────────────────────────────────────── */
 .scroll-smooth-container {
   scroll-behavior: smooth;
