@@ -2,6 +2,19 @@
 
 import Link from "next/link";
 
+function activityDaysAgo(myProducts = []) {
+  if (!myProducts.length) return null;
+  const latest = myProducts.map((p) => p.created_at).filter(Boolean).sort().reverse()[0];
+  if (!latest) return null;
+  const diffMs = Date.now() - new Date(latest).getTime();
+  const days = Math.floor(diffMs / 86400000);
+  if (days === 0) return "Activo hoy";
+  if (days === 1) return "Activo ayer";
+  if (days < 7) return `Activo hace ${days} días`;
+  if (days < 30) return `Activo hace ${Math.floor(days / 7)} semanas`;
+  return `Activo hace ${Math.floor(days / 30)} meses`;
+}
+
 export default function ProfileScreen({
   myProducts = [],
   onAdd,
@@ -17,38 +30,78 @@ export default function ProfileScreen({
   onSignOut,
   onSignIn,
   onDeleteAccount,
+  onEditProfile,
   isGold,
   boostCredits,
+  matchCount = 0,
+  tradeCount = 0,
+  avgRating = 0,
+  ratingCount = 0,
 }) {
   const displayName = profile?.display_name || (user?.email ? user.email.split("@")[0] : "Yo");
   const initial = displayName.charAt(0).toUpperCase();
   const subtitle = user?.email || "Miembro nuevo";
+  const activityLabel = activityDaysAgo(myProducts);
 
   return (
     <div className="w-full max-w-md">
       {isGold && (
-        <div className="w-full mb-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 font-black text-sm tracking-wide" style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #f59e0b 100%)", color: "white", boxShadow: "0 4px 20px rgba(245,158,11,0.4)" }}>
+        <div
+          className="w-full mb-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 font-black text-sm tracking-wide"
+          style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #f59e0b 100%)", color: "white", boxShadow: "0 4px 20px rgba(245,158,11,0.4)" }}
+        >
           ✨ TRUEKLY GOLD — Activo
         </div>
       )}
+
       <div className="flex items-center gap-5 mb-5">
         <div className="relative shrink-0">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-2xl" style={{ background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)" }}>{initial}</div>
-          {verified && <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full text-white text-sm font-black flex items-center justify-center shadow-lg border-2 border-background" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>✓</span>}
-          {isGold && <span className="absolute -top-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-lg border-2 border-background" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}>✨</span>}
+          <div className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-2xl" style={{ background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)" }}>
+            {initial}
+          </div>
+          {verified && (
+            <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full text-white text-sm font-black flex items-center justify-center shadow-lg border-2 border-background" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>✓</span>
+          )}
+          {isGold && (
+            <span className="absolute -top-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-lg border-2 border-background" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}>✨</span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <h2 className="text-2xl font-black truncate">{displayName}</h2>
-            {verified && <span className="px-2 py-0.5 rounded-full text-white text-[10px] font-black shrink-0" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>VERIFICADO</span>}
+            {verified && (
+              <span className="px-2 py-0.5 rounded-full text-white text-[10px] font-black shrink-0" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>VERIFICADO</span>
+            )}
           </div>
-          <p className="text-sm text-foreground/55 truncate mb-2">{subtitle}</p>
-          <button className="px-3 py-1 rounded-full text-xs font-bold border border-foreground/15 text-foreground/60 hover:border-brand-green hover:text-brand-green transition">Editar perfil</button>
+          <p className="text-sm text-foreground/55 truncate mb-1.5">{subtitle}</p>
+          {activityLabel && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold mb-2" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+              {activityLabel}
+            </span>
+          )}
+          {user && (
+            <button onClick={onEditProfile} className="px-3 py-1 rounded-full text-xs font-bold border border-foreground/15 text-foreground/60 hover:border-brand-green hover:text-brand-green transition">
+              Editar perfil
+            </button>
+          )}
         </div>
       </div>
 
+      {ratingCount > 0 && (
+        <div className="flex items-center gap-1.5 mb-5 px-3.5 py-2 rounded-full bg-foreground/4 border border-foreground/8 w-fit">
+          <span className="text-amber-400 text-sm">★</span>
+          <span className="text-sm font-black">{avgRating.toFixed(1)}</span>
+          <span className="text-xs text-foreground/45">({ratingCount} valoración{ratingCount !== 1 ? "es" : ""})</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-2 mb-6">
-        {[{ label: "Productos", value: myProducts.length }, { label: "Matches", value: "—" }, { label: "Truekes", value: 0 }].map(({ label, value }) => (
+        {[
+          { label: "Productos", value: myProducts.length },
+          { label: "Matches", value: matchCount },
+          { label: "Truekes", value: tradeCount },
+        ].map(({ label, value }) => (
           <div key={label} className="flex flex-col items-center py-3 rounded-2xl border border-foreground/8 bg-foreground/3">
             <span className="text-xl font-black">{value}</span>
             <span className="text-[11px] text-foreground/50 font-semibold mt-0.5">{label}</span>
@@ -77,11 +130,16 @@ export default function ProfileScreen({
         <h3 className="text-sm font-black uppercase tracking-wider text-foreground/60">Mis productos ({myProducts.length})</h3>
         <div className="flex items-center gap-2">
           {isGold && (
-            <button onClick={boostCredits > 0 ? null : onBuyBoosts} className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition ${boostCredits > 0 ? "bg-gradient-to-r from-yellow-400/20 to-orange-400/20 text-orange-600 border border-orange-300/40" : "bg-foreground/5 text-foreground/40 border border-foreground/10 hover:bg-foreground/10"}`}>
+            <button
+              onClick={boostCredits > 0 ? null : onBuyBoosts}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition ${boostCredits > 0 ? "bg-gradient-to-r from-yellow-400/20 to-orange-400/20 text-orange-600 border border-orange-300/40" : "bg-foreground/5 text-foreground/40 border border-foreground/10 hover:bg-foreground/10"}`}
+            >
               🚀 {boostCredits > 0 ? `${boostCredits} boost${boostCredits !== 1 ? "s" : ""}` : "Sin boosts"}
             </button>
           )}
-          <button onClick={onAdd} className="text-sm font-black px-3 py-1 rounded-full text-white shadow transition hover:scale-105" style={{ background: "linear-gradient(135deg, #047857, #0369a1)" }}>+ Nuevo</button>
+          <button onClick={onAdd} className="text-sm font-black px-3 py-1 rounded-full text-white shadow transition hover:scale-105" style={{ background: "linear-gradient(135deg, #047857, #0369a1)" }}>
+            + Nuevo
+          </button>
         </div>
       </div>
 
@@ -98,7 +156,10 @@ export default function ProfileScreen({
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" style={{ backgroundImage: `url('${p.photos?.[0]}')` }} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <div className="absolute top-2 left-2 right-2 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <button onClick={() => { if (!isGold) { onBoost?.(p); return; } if (boostCredits > 0) { onBoost?.(p); } else { onBuyBoosts?.(); } }} className={`px-2.5 py-1 rounded-full text-white text-[10px] font-black shadow transition ${isGold && boostCredits > 0 ? "bg-gradient-to-r from-yellow-400 to-orange-500" : isGold ? "bg-black/50" : "bg-gradient-to-r from-yellow-400 to-orange-500"}`}>
+                <button
+                  onClick={() => { if (!isGold) { onBoost?.(p); return; } if (boostCredits > 0) { onBoost?.(p); } else { onBuyBoosts?.(); } }}
+                  className={`px-2.5 py-1 rounded-full text-white text-[10px] font-black shadow transition ${isGold && boostCredits > 0 ? "bg-gradient-to-r from-yellow-400 to-orange-500" : isGold ? "bg-black/50" : "bg-gradient-to-r from-yellow-400 to-orange-500"}`}
+                >
                   🚀 {isGold && boostCredits <= 0 ? "Sin boosts" : "BOOST"}
                 </button>
                 <button onClick={() => onDelete(p.id)} className="w-8 h-8 rounded-full bg-black/60 text-white text-sm flex items-center justify-center hover:bg-red-500 transition" aria-label="Eliminar">🗑</button>
@@ -129,10 +190,12 @@ export default function ProfileScreen({
             <div className="w-6 h-6 rounded-full bg-white shadow transition-transform" style={{ transform: darkMode ? "translateX(20px)" : "translateX(0)" }} />
           </div>
         </button>
+
         <div className="p-4 rounded-2xl bg-foreground/4 border border-foreground/6 text-sm text-foreground/70">
           <p className="font-bold mb-1 text-sm">💡 Consejo</p>
           <p className="text-[13px] leading-relaxed text-foreground/60">Cuantos más productos subas, más matches conseguirás. Fotos claras y descripción honesta son la clave.</p>
         </div>
+
         {user && (
           <>
             <button onClick={onSignOut} className="w-full p-3.5 rounded-2xl text-sm font-bold text-foreground/60 hover:bg-foreground/5 transition border border-foreground/8">Cerrar sesión</button>
@@ -145,4 +208,4 @@ export default function ProfileScreen({
       </div>
     </div>
   );
-            }
+}
