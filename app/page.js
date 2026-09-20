@@ -191,19 +191,29 @@ function HomeInner() {
     return () => supabase.removeChannel(channel);
   }, [user?.id]);
 
+  const [fetchError, setFetchError] = useState(null);
+
   const fetchPublicProducts = async (userId) => {
     setLoadingProducts(true);
-    let query = supabase
-      .from("products")
-      .select("*, profiles!owner_id(username, display_name, neighborhood, verified, gold)")
-      .eq("active", true)
-      .order("boosted_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
-    if (userId) query = query.neq("owner_id", userId);
-    const { data } = await query;
-    setProducts((data || []).map(shapeProduct));
+    try {
+      let query = supabase
+        .from("products")
+        .select("*, profiles!owner_id(username, display_name, neighborhood, verified, gold)")
+        .eq("active", true)
+        .order("boosted_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (userId) query = query.neq("owner_id", userId);
+      const { data, error } = await query;
+      if (error) throw error;
+      setProducts((data || []).map(shapeProduct));
+      setFetchError(null);
+    } catch (err) {
+      setFetchError("Error cargando datos. Toca para reintentar.");
+    }
     setLoadingProducts(false);
   };
+
 
   const fetchAll = async (userId) => {
     // Get user's first active product (used for match detection)
@@ -241,6 +251,14 @@ function HomeInner() {
       .or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
     const blockedSet = new Set((blocksData || []).flatMap((b) => [b.blocked_id, b.blocker_id]).filter((id) => id !== userId));
 
+    // Fetch user products FIRST — needed for scoring
+    const { data: myProdsData } = await supabase
+      .from("products")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false });
+    setMyProducts(myProdsData || []);
+
     // Fetch discover products (exclude own + already swiped + blocked)
     setLoadingProducts(true);
     const { data: productsData } = await supabase
@@ -249,11 +267,34 @@ function HomeInner() {
       .eq("active", true)
       .neq("owner_id", userId)
       .order("boosted_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
-    const shapedProducts = (productsData || []).filter((p) => !swipedIds.has(p.id) && !blockedSet.has(p.owner_id)).map(shapeProduct);
-    const myTitleWords = (myProdsData || []).flatMap((p) => (p.title || "").toLowerCase().split(/\s+/).filter((w) => w.length > 3));
+      .order("created_at", { ascending: false })
+      .limit(100);
+    // Shape + score products for smart swipe ordering
+    const shapedProducts = (productsData || [])
+      .filter((p) => !swipedIds.has(p.id) && !blockedSet.has(p.owner_id))
+      .map(shapeProduct);
+
+    // Compatibility scoring with Spanish stop word removal
+    const STOP_WORDS = new Set(["de","la","el","un","una","lo","los","las","en","y","a","por","con","del","al","es","se","no","que","su","le"]);
+    const tokenize = (str) => (str || "").toLowerCase().split(/[\s,;.]+/).filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+    const myTitleWords = (myProdsData || []).flatMap((p) => tokenize(p.title));
+    const myWantWords = (myProdsData || []).flatMap((p) => tokenize(p.wants));
     const myNeighborhood = (myProdsData || [])[0]?.neighborhood || "";
-    const scoreProduct = (p) => { let s = 0; if (myTitleWords.length > 0 && p.wants) { const wl = p.wants.toLowerCase(); if (myTitleWords.some((w) => wl.includes(w))) s += 2; } if (myNeighborhood && p.neighborhood === myNeighborhood) s += 1; return s; };
+
+    const scoreProduct = (p) => {
+      let s = 0;
+      if (myTitleWords.length > 0 && p.wants) {
+        const wl = p.wants.toLowerCase();
+        if (myTitleWords.some((w) => wl.includes(w))) s += 2;
+      }
+      if (myWantWords.length > 0 && p.title) {
+        const tl = p.title.toLowerCase();
+        if (myWantWords.some((w) => tl.includes(w))) s += 2;
+      }
+      if (myNeighborhood && p.neighborhood === myNeighborhood) s += 1;
+      return s;
+    };
+
     shapedProducts.sort((a, b) => scoreProduct(b) - scoreProduct(a));
     setProducts(shapedProducts);
     setLoadingProducts(false);
@@ -262,20 +303,10 @@ function HomeInner() {
     const { data: matchesData } = await supabase
       .from("matches")
       .select(
-        `id, user_a, user_b, product_a, product_b, created_at,
-         product_b_data:products!product_b(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified)),
-         product_a_data:products!product_a(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified))`
+        "id, user_a, user_b, product_a, product_b, created_at, status, product_b_data:products!product_b(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified)), product_a_data:products!product_a(id, title, photos, wants, neighborhood, profiles!owner_id(display_name, username, verified))"
       )
-      .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+      .or("user_a.eq." + userId + ",user_b.eq." + userId);
     setMatches((matchesData || []).map((m) => shapeMatch(m, userId)));
-
-    // Fetch user's own products
-    const { data: myProdsData } = await supabase
-      .from("products")
-      .select("*")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false });
-    setMyProducts(myProdsData || []);
 
     // Fetch likes (who swiped yes/super on user's product)
     if (myProdId) {
@@ -510,6 +541,16 @@ function HomeInner() {
                 <span className="text-orange-500 font-bold">→</span>
               </button>
             )}
+            {fetchError && (
+              <button
+                onClick={() => user ? fetchAll(user.id) : fetchPublicProducts(null)}
+                className="w-full max-w-sm mb-4 p-4 rounded-2xl border border-red-500/20 text-center animate-fadeIn hover:scale-[1.01] transition"
+                style={{ background: "rgba(239,68,68,0.08)" }}
+              >
+                <p className="text-sm font-bold text-red-400 mb-1">⚠️ {fetchError}</p>
+                <p className="text-xs text-foreground/50">Toca para reintentar</p>
+              </button>
+            )}
             {loadingProducts ? (
               <SkeletonDeck />
             ) : (
@@ -526,17 +567,44 @@ function HomeInner() {
           </>
         )}
         {activeTab === "likes" && (
-          <LikesYouScreen
+          <>
+            {loaded && myProducts.length === 0 && (
+              <button onClick={() => setShowUpload(true)} className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] active:scale-95 transition flex items-center gap-3 animate-fadeIn">
+                <span className="text-3xl">📦</span>
+                <div className="flex-1"><p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">Sube tu primer producto para empezar a hacer matches</p></div>
+                <span className="text-brand-blue-dark text-xl">›</span>
+              </button>
+            )}
+            <LikesYouScreen
             products={likes}
             isGold={isGold}
             onUpgrade={() => openGold("Hazte Gold para ver quién te ha dado like")}
           />
+          </>
         )}
         {activeTab === "matches" && (
-          <MatchesList matches={matches} onOpen={openChatFor} onDiscover={() => setActiveTab("discover")} />
+          <>
+            {loaded && myProducts.length === 0 && matches.length === 0 && (
+              <button onClick={() => setShowUpload(true)} className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] active:scale-95 transition flex items-center gap-3 animate-fadeIn">
+                <span className="text-3xl">📦</span>
+                <div className="flex-1"><p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">Sube tu primer producto para empezar a hacer matches</p></div>
+                <span className="text-brand-blue-dark text-xl">›</span>
+              </button>
+            )}
+            <MatchesList matches={matches} onOpen={openChatFor} onDiscover={() => setActiveTab("discover")} myProducts={myProducts} />
+          </>
         )}
         {activeTab === "chats" && (
-          <ChatMatchList matches={matches} onOpen={openChatFor} onDiscover={() => setActiveTab("discover")} />
+          <>
+            {loaded && myProducts.length === 0 && (
+              <button onClick={() => setShowUpload(true)} className="w-full max-w-sm mb-5 p-4 rounded-2xl bg-gradient-to-r from-brand-green/15 to-brand-blue/15 border border-brand-green/30 text-left hover:scale-[1.01] active:scale-95 transition flex items-center gap-3 animate-fadeIn">
+                <span className="text-3xl">📦</span>
+                <div className="flex-1"><p className="font-bold text-sm bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">Sube un producto para conseguir matches y chats</p></div>
+                <span className="text-brand-blue-dark text-xl">›</span>
+              </button>
+            )}
+            <ChatMatchList matches={matches} onOpen={openChatFor} onDiscover={() => setActiveTab("discover")} />
+          </>
         )}
         {activeTab === "profile" && (
           <ProfileScreen
@@ -706,7 +774,21 @@ function timeAgo(dateStr) {
   return `hace ${Math.floor(days / 7)}sem`;
 }
 
-function MatchesList({ matches, onOpen, onDiscover }) {
+function MatchesList({ matches, onOpen, onDiscover, myProducts = [] }) {
+  const STOP_WORDS_ML = new Set(["de","la","el","un","una","lo","los","las","en","y","a","por","con"]);
+  const tokML = (s) => (s||"").toLowerCase().split(/[\s,]+/).filter(w => w.length > 2 && !STOP_WORDS_ML.has(w));
+  const myTitleWordsML = myProducts.flatMap(p => tokML(p.title));
+  const myWantWordsML = myProducts.flatMap(p => tokML(p.wants));
+  function getCompatHint(m) {
+    const tw = tokML(m.wants);
+    const th = tokML(m.title);
+    const iHave = myTitleWordsML.length > 0 && tw.some(w => myTitleWordsML.some(mw => mw.includes(w) || w.includes(mw)));
+    const theyHave = myWantWordsML.length > 0 && th.some(w => myWantWordsML.some(mw => mw.includes(w) || w.includes(mw)));
+    if (iHave && theyHave) return "Tú tienes lo que busca · Tiene lo que buscas";
+    if (iHave) return "Tú tienes lo que busca";
+    if (theyHave) return "Tiene lo que buscas";
+    return null;
+  }
   if (matches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
@@ -841,9 +923,11 @@ function MatchesList({ matches, onOpen, onDiscover }) {
               <p className="font-black text-white text-sm leading-tight" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>
                 {m.title}
               </p>
-              <p className="text-white/45 mt-1 truncate" style={{ fontSize: 10 }}>
-                Toca para chatear 💬
-              </p>
+              {(() => { const h = getCompatHint(m); return h ? (
+                <p className="mt-1 truncate font-semibold" style={{ fontSize: 9, color: "#34d399" }}>⚡ {h}</p>
+              ) : (
+                <p className="text-white/45 mt-1 truncate" style={{ fontSize: 10 }}>Toca para chatear 💬</p>
+              ); })()}
             </div>
           </button>
         ))}
@@ -873,7 +957,7 @@ function MatchesList({ matches, onOpen, onDiscover }) {
             letterSpacing: "-0.02em",
           }}
         >
-          Sin conversaciones
+          Aún no tienes matches
         </h2>
         <p className="text-sm max-w-xs mb-6" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.65 }}>
           Haz match con alguien para empezar a chatear y cerrar tu primer trueque.
@@ -883,7 +967,7 @@ function MatchesList({ matches, onOpen, onDiscover }) {
           className="px-6 py-3 rounded-2xl font-bold text-white text-sm shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
           style={{ background: "linear-gradient(135deg, #0ea5e9, #10b981)", boxShadow: "0 6px 24px rgba(14,165,233,0.35)" }}
         >
-          Buscar productos →
+          Sigue explorando →
         </button>
       </div>
     );
@@ -1169,7 +1253,7 @@ function NotificationPrompt({ userId }) {
 
 // ─── Inline: OnboardingScreen ─────────────────────────────────────────────────
 const ONBOARDING_STEPS = [
-  { emoji: "🔄", grad: "linear-gradient(135deg,#10b981,#059669)", title: "Truekea lo que no usas", sub: "Intercambia tus objetos con personas cercanas. Sin dinero, sin complicaciones." },
+  { emoji: "🔄", grad: "linear-gradient(135deg,#10b981,#059669)", title: "Sube lo que no usas. Consigue lo que necesitas. Sin dinero.", sub: "Truekly conecta personas que tienen lo que buscas y buscan lo que tienes.", badge: "Más de 500 trueques en Madrid" },
   { emoji: "👆", grad: "linear-gradient(135deg,#0ea5e9,#0284c7)", title: "Desliza y conecta", sub: "Desliza a la derecha si quieres truekear algo. Si os gustais mutuamente es un match!" },
   { emoji: "💬", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)", title: "Habla y queda", sub: "Chatea con tu match, poneos de acuerdo y quedáis para hacer el trueque en persona." },
   { emoji: "📦", grad: "linear-gradient(135deg,#10b981,#0ea5e9)", title: "Sube tu primer producto", sub: "Es lo que vas a ofrecer en los trueques. Buenas fotos y descripción honesta = más matches." },
@@ -1227,6 +1311,11 @@ function OnboardingScreen({ onDone, onAddProduct }) {
         <p className="text-center leading-relaxed" style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, maxWidth: 300 }}>
           {s.sub}
         </p>
+        {s.badge && (
+          <div className="mt-5 px-4 py-2 rounded-full text-xs font-black" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}>
+            ✓ {s.badge}
+          </div>
+        )}
       </div>
 
       <div className="w-full max-w-sm px-6 pb-12 relative z-10">
