@@ -333,7 +333,11 @@ function HomeInner() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      if (!token) return;
+      if (!token) {
+        setShowAuth(true);
+        return;
+      }
+
       const res = await fetch("/api/swipe", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -357,7 +361,9 @@ function HomeInner() {
           setMatchModalCard({ ...product, matchId });
         }
       }
-    } catch (err) { console.error("Swipe error:", err); }
+    } catch {
+      // swipe errors are non-critical
+    }
   };
 
   const handleSaveProduct = (product) => {
