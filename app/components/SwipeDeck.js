@@ -34,6 +34,7 @@ export default function SwipeDeck({
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [decision, setDecision] = useState(null);
+  const committingRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
   const [matchedProduct, setMatchedProduct] = useState(null);
   const startRef = useRef({ x: 0, y: 0, t: 0 });
@@ -86,12 +87,13 @@ export default function SwipeDeck({
   };
 
   const commit = (choice) => {
+    if (committingRef.current) return;
     if (outOfSwipes) {
       onUpgrade?.();
       setDrag({ x: 0, y: 0 });
       return;
     }
-
+    committingRef.current = true;
     setDecision(choice);
     onSwipe?.(current, choice);
 
@@ -115,7 +117,8 @@ export default function SwipeDeck({
       setExpanded(false);
       setDrag({ x: 0, y: 0 });
       setDecision(null);
-    }, 250);
+      committingRef.current = false;
+    }, 280);
   };
 
   const closeMatch = () => setMatchedProduct(null);
@@ -232,8 +235,8 @@ export default function SwipeDeck({
 
 function ActionButton({ children, onClick, label, type, large }) {
   const styles = {
-    no: { bg: "linear-gradient(135deg, #fff5f5, #fff)", color: "#ef4444", border: "2px solid #fecaca", shadow: "0 8px 28px rgba(239,68,68,0.2), 0 2px 8px rgba(0,0,0,0.08)" },
-    super: { bg: "linear-gradient(135deg, #f0f9ff, #fff)", color: "#0ea5e9", border: "2px solid #bae6fd", shadow: "0 8px 28px rgba(14,165,233,0.2), 0 2px 8px rgba(0,0,0,0.08)" },
+    no: { bg: "rgba(239,68,68,0.12)", color: "#ef4444", border: "2px solid rgba(239,68,68,0.4)", shadow: "0 8px 28px rgba(239,68,68,0.2), 0 2px 8px rgba(0,0,0,0.3)", blur: true },
+    super: { bg: "rgba(14,165,233,0.12)", color: "#38bdf8", border: "2px solid rgba(14,165,233,0.4)", shadow: "0 8px 28px rgba(14,165,233,0.2), 0 2px 8px rgba(0,0,0,0.3)", blur: true },
     yes: { bg: "linear-gradient(135deg, #10b981, #059669, #0ea5e9)", color: "white", border: "none", shadow: "0 10px 36px rgba(16,185,129,0.5), 0 4px 12px rgba(0,0,0,0.15)" },
   };
   const s = styles[type];
@@ -250,11 +253,13 @@ function ActionButton({ children, onClick, label, type, large }) {
           color: s.color,
           border: s.border,
           boxShadow: s.shadow,
+          backdropFilter: s.blur ? "blur(12px)" : "none",
+          WebkitBackdropFilter: s.blur ? "blur(12px)" : "none",
         }}
       >
         {children}
       </button>
-      <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: type === "yes" ? "#047857" : type === "no" ? "#ef4444" : "#0369a1", opacity: 0.7 }}>
+      <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: type === "yes" ? "#34d399" : type === "no" ? "#f87171" : "#38bdf8", opacity: 0.85 }}>
         {label}
       </span>
     </div>
@@ -265,7 +270,8 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
   const scale = 1 - depth * 0.045;
   const translateY = depth * 14;
   const opacity = depth === 0 ? 1 : 0.95 - depth * 0.18;
-  const photos = item.photos || [item.image];
+  const photos = (item.photos || (item.image ? [item.image] : [])).filter(Boolean);
+  const hasPhoto = photos.length > 0 && photos[photoIdx];
 
   const compatible = depth === 0 && isCompatible(item.wants, myProducts);
 
@@ -291,7 +297,11 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
     >
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url('${photos[photoIdx]}')`, transition: "background-image 0.3s ease" }}
+        style={{
+          backgroundImage: hasPhoto ? `url('${photos[photoIdx]}')` : undefined,
+          background: hasPhoto ? undefined : "linear-gradient(135deg, #1a2e26 0%, #0f1f19 60%, #121a28 100%)",
+          transition: "background-image 0.3s ease",
+        }}
       />
 
       {depth === 0 && photos.length > 1 && (
