@@ -20,11 +20,11 @@ const jakartaSans = Plus_Jakarta_Sans({
 
 export const metadata = {
   metadataBase: new URL("https://truekly-match.vercel.app"),
-  title: "Truekly Match — Trueque con match",
+  title: "Truekly Match — Trueque de objetos en Madrid",
   description:
-    "Intercambia productos haciendo match. Móviles, consolas, bicis y más. Lo tuyo por lo suyo, donde estés.",
+    "Sube lo que ya no usas. Consigue lo que necesitas. Sin dinero. Intercambia objetos haciendo match con personas de tu ciudad.",
   applicationName: "Truekly Match",
-  keywords: ["trueque", "intercambio", "match", "wallapop", "segunda mano", "España", "global"],
+  keywords: ["trueque", "intercambio", "match", "wallapop", "segunda mano", "España", "Madrid", "global"],
   authors: [{ name: "Truekly Match" }],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -33,22 +33,23 @@ export const metadata = {
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "Truekly Match — Lo tuyo por lo suyo",
+    title: "Truekly Match — Trueque de objetos en Madrid",
     description:
-      "Intercambia productos haciendo match estilo Tinder. España y todo el mundo.",
+      "Sube lo que ya no usas. Consigue lo que necesitas. Sin dinero. Truekly conecta personas que tienen lo que tú buscas.",
     type: "website",
     locale: "es_ES",
     siteName: "Truekly Match",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Truekly Match" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Truekly Match",
-    description: "Trueque de productos con UX de match. En cualquier ciudad.",
+    title: "Truekly Match — Trueque sin dinero",
+    description: "Sube lo que ya no usas. Consigue lo que necesitas. Sin dinero.",
   },
 };
 
 export const viewport = {
-  themeColor: "#10b981",
+  themeColor: "#0a1612",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -61,8 +62,16 @@ export default function RootLayout({ children }) {
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} ${jakartaSans.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        {/* Apply saved theme before first paint to avoid a light-mode flash (dark is the default) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var raw=localStorage.getItem("truekly:ui:v2");var dark=raw?JSON.parse(raw).darkMode!==false:true;if(dark)document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}',
+          }}
+        />
         {/* Animated blob background */}
         <div className="blob-bg" aria-hidden="true">
           <div className="blob-1" />
