@@ -71,6 +71,7 @@ function shapeMatch(match, userId) {
     status: match.status || "active",
     my_title: myProduct.title || "",
     my_product_id: myProduct.id || null,
+    created_at: match.created_at || null,
   };
 }
 
@@ -249,11 +250,12 @@ function HomeInner() {
       .neq("owner_id", userId)
       .order("boosted_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
-    setProducts(
-      (productsData || [])
-        .filter((p) => !swipedIds.has(p.id) && !blockedSet.has(p.owner_id))
-        .map(shapeProduct)
-    );
+    const shapedProducts = (productsData || []).filter((p) => !swipedIds.has(p.id) && !blockedSet.has(p.owner_id)).map(shapeProduct);
+    const myTitleWords = (myProdsData || []).flatMap((p) => (p.title || "").toLowerCase().split(/\s+/).filter((w) => w.length > 3));
+    const myNeighborhood = (myProdsData || [])[0]?.neighborhood || "";
+    const scoreProduct = (p) => { let s = 0; if (myTitleWords.length > 0 && p.wants) { const wl = p.wants.toLowerCase(); if (myTitleWords.some((w) => wl.includes(w))) s += 2; } if (myNeighborhood && p.neighborhood === myNeighborhood) s += 1; return s; };
+    shapedProducts.sort((a, b) => scoreProduct(b) - scoreProduct(a));
+    setProducts(shapedProducts);
     setLoadingProducts(false);
 
     // Fetch matches with both products joined for perspective-aware display
@@ -378,6 +380,11 @@ function HomeInner() {
         onDone={() => {
           try { localStorage.setItem("truekly_onboarded", "1"); } catch {}
           setShowOnboarding(false);
+        }}
+        onAddProduct={() => {
+          try { localStorage.setItem("truekly_onboarded", "1"); } catch {}
+          setShowOnboarding(false);
+          setShowUpload(true);
         }}
       />
     );
@@ -513,6 +520,7 @@ function HomeInner() {
                 onSwipe={handleSwipe}
                 outOfSwipes={!isGold && remainingSwipes <= 0}
                 onUpgrade={() => openGold("Se te acabaron los swipes gratis hoy")}
+                myProducts={myProducts}
               />
             )}
           </>
@@ -525,10 +533,10 @@ function HomeInner() {
           />
         )}
         {activeTab === "matches" && (
-          <MatchesList matches={matches} onOpen={openChatFor} />
+          <MatchesList matches={matches} onOpen={openChatFor} onDiscover={() => setActiveTab("discover")} />
         )}
         {activeTab === "chats" && (
-          <ChatMatchList matches={matches} onOpen={openChatFor} />
+          <ChatMatchList matches={matches} onOpen={openChatFor} onDiscover={() => setActiveTab("discover")} />
         )}
         {activeTab === "profile" && (
           <ProfileScreen
@@ -685,74 +693,286 @@ function IconButton({ children, label, onClick, highlight, active }) {
   );
 }
 
-function MatchesList({ matches, onOpen }) {
-  if (!matches.length) return (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
-      <div className="w-24 h-24 rounded-full flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.15))", border: "1px solid rgba(16,185,129,0.25)", boxShadow: "0 8px 32px rgba(16,185,129,0.12)" }}><span style={{ fontSize: 44 }}>💚</span></div>
-      <h2 className="text-2xl font-black mb-2" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Sin matches todavía</h2>
-      <p className="text-sm max-w-xs" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.6 }}>Sigue descubriendo productos y dale like a los que te interesen para hacer trueques</p>
-    </div>
-  );
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `hace ${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `hace ${days}d`;
+  return `hace ${Math.floor(days / 7)}sem`;
+}
+
+function MatchesList({ matches, onOpen, onDiscover }) {
+  if (matches.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
+        <div
+          className="w-28 h-28 rounded-3xl flex items-center justify-center mb-5 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(14,165,233,0.12))",
+            border: "1px solid rgba(16,185,129,0.2)",
+          }}
+        >
+          <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)", animation: "shimmer-btn 3s ease-in-out infinite" }} />
+          <span style={{ fontSize: 52 }}>💚</span>
+        </div>
+        <h2
+          className="text-2xl font-black mb-2"
+          style={{
+            background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Sin matches todavía
+        </h2>
+        <p className="text-sm max-w-xs mb-6" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.65 }}>
+          Dale like a los productos que te interesan. Cuando sea mutuo, aquí aparece tu match.
+        </p>
+        <button
+          onClick={onDiscover}
+          className="px-6 py-3 rounded-2xl font-bold text-white text-sm shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
+          style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)", boxShadow: "0 6px 24px rgba(16,185,129,0.35)" }}
+        >
+          Descubrir productos →
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md animate-fadeIn">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-black" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Tus matches</h2>
-        <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.15))", border: "1px solid rgba(16,185,129,0.3)", color: "#10b981" }}>{matches.length}</span>
+        <h2
+          className="text-xl font-black"
+          style={{
+            background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Tus matches
+        </h2>
+        <span
+          className="text-xs font-black px-2.5 py-1 rounded-full"
+          style={{
+            background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.15))",
+            border: "1px solid rgba(16,185,129,0.3)",
+            color: "#10b981",
+          }}
+        >
+          {matches.length}
+        </span>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {matches.map((m, i) => (
-          <button key={m.id} onClick={() => onOpen(m)} className="relative overflow-hidden text-left active:scale-95 transition-transform" style={{ aspectRatio: "3/4", borderRadius: 20, boxShadow: "0 8px 28px rgba(0,0,0,0.22)", animation: `fadeIn 0.4s ease ${i * 0.06}s both` }}>
-            {m.photos[0] ? <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${m.photos[0]}')` }} /> : <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1a2e26, #0f1f19)" }} />}
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%)" }} />
-            {m.verified && <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.9)", backdropFilter: "blur(8px)" }}><svg width="9" height="9" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg><span className="text-white font-black" style={{ fontSize: 8 }}>Verificado</span></div>}
-            <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.95)", boxShadow: "0 2px 12px rgba(16,185,129,0.5)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+          <button
+            key={m.id}
+            onClick={() => onOpen(m)}
+            className="relative overflow-hidden text-left active:scale-95 transition-transform"
+            style={{
+              aspectRatio: "3/4",
+              borderRadius: 20,
+              boxShadow: "0 8px 28px rgba(0,0,0,0.22)",
+              animation: `fadeIn 0.4s ease ${i * 0.06}s both`,
+            }}
+          >
+            {m.photos[0] ? (
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url('${m.photos[0]}')` }}
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(135deg, #1a2e26, #0f1f19)" }}
+              />
+            )}
+            <div
+              className="absolute inset-0"
+              style={{ background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.08) 100%)" }}
+            />
+            {m.created_at && (
+              <div
+                className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-white"
+                style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", fontSize: 9, fontWeight: 700 }}
+              >
+                {timeAgo(m.created_at)}
+              </div>
+            )}
+            <div
+              className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
+              style={{
+                background: "rgba(16,185,129,0.95)",
+                boxShadow: "0 2px 12px rgba(16,185,129,0.5)",
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
             <div className="absolute bottom-0 left-0 right-0 p-3">
-              <p className="font-black text-white text-sm leading-tight mb-0.5" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>{m.title}</p>
-              <p className="text-white/70 font-medium" style={{ fontSize: 11 }}>{m.owner}</p>
-              {m.neighborhood && <p className="text-white/50 mt-0.5" style={{ fontSize: 10 }}>📍 {m.neighborhood}</p>}
+              <div className="flex items-center gap-2 mb-1.5">
+                <div
+                  className="w-7 h-7 rounded-full shrink-0 border-2"
+                  style={{
+                    backgroundImage: m.photos[0] ? `url('${m.photos[0]}')` : undefined,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    background: m.photos[0] ? undefined : "linear-gradient(135deg,#10b981,#0ea5e9)",
+                    borderColor: "rgba(255,255,255,0.4)",
+                  }}
+                />
+                <div className="flex items-center gap-1 min-w-0">
+                  <p className="text-white/80 font-semibold truncate" style={{ fontSize: 11 }}>{m.owner}</p>
+                  {m.verified && (
+                    <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: "#10b981" }}>
+                      <svg width="6" height="6" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="font-black text-white text-sm leading-tight" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>
+                {m.title}
+              </p>
+              <p className="text-white/45 mt-1 truncate" style={{ fontSize: 10 }}>
+                Toca para chatear 💬
+              </p>
             </div>
           </button>
         ))}
       </div>
     </div>
   );
-}
+}function ChatMatchList({ matches, onOpen, onDiscover }) {
+  if (matches.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
+        <div
+          className="w-28 h-28 rounded-3xl flex items-center justify-center mb-5 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(14,165,233,0.12), rgba(16,185,129,0.12))",
+            border: "1px solid rgba(14,165,233,0.2)",
+          }}
+        >
+          <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)", animation: "shimmer-btn 3s ease-in-out infinite" }} />
+          <span style={{ fontSize: 52 }}>💬</span>
+        </div>
+        <h2
+          className="text-2xl font-black mb-2"
+          style={{
+            background: "linear-gradient(135deg, #0ea5e9, #10b981)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Sin conversaciones
+        </h2>
+        <p className="text-sm max-w-xs mb-6" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.65 }}>
+          Haz match con alguien para empezar a chatear y cerrar tu primer trueque.
+        </p>
+        <button
+          onClick={onDiscover}
+          className="px-6 py-3 rounded-2xl font-bold text-white text-sm shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
+          style={{ background: "linear-gradient(135deg, #0ea5e9, #10b981)", boxShadow: "0 6px 24px rgba(14,165,233,0.35)" }}
+        >
+          Buscar productos →
+        </button>
+      </div>
+    );
+  }
 
-function ChatMatchList({ matches, onOpen }) {
-  if (!matches.length) return (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-6 animate-fadeIn">
-      <div className="w-24 h-24 rounded-full flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(16,185,129,0.15))", border: "1px solid rgba(14,165,233,0.25)", boxShadow: "0 8px 32px rgba(14,165,233,0.12)" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
-      <h2 className="text-2xl font-black mb-2" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Sin conversaciones</h2>
-      <p className="text-sm max-w-xs" style={{ color: "var(--foreground)", opacity: 0.5, lineHeight: 1.6 }}>Cuando hagas match podrás chatear aquí</p>
-    </div>
-  );
   return (
     <div className="w-full max-w-md animate-fadeIn">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-black" style={{ fontFamily: "var(--font-jakarta), system-ui", background: "linear-gradient(135deg, #10b981, #0ea5e9)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>Chats</h2>
-        <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(16,185,129,0.15))", border: "1px solid rgba(14,165,233,0.3)", color: "#0ea5e9" }}>{matches.length}</span>
+        <h2
+          className="text-xl font-black"
+          style={{
+            fontFamily: "var(--font-jakarta), system-ui",
+            background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Chats
+        </h2>
+        <span
+          className="text-xs font-black px-2.5 py-1 rounded-full"
+          style={{
+            background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(16,185,129,0.15))",
+            border: "1px solid rgba(14,165,233,0.3)",
+            color: "#0ea5e9",
+          }}
+        >
+          {matches.length}
+        </span>
       </div>
       <div className="space-y-2">
         {matches.map((m, i) => (
-          <button key={m.id} onClick={() => onOpen(m)} className="w-full flex items-center gap-3 p-3 rounded-2xl text-left active:scale-[0.98] transition-all" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", animation: `fadeIn 0.35s ease ${i * 0.05}s both` }}>
-            <div className="w-14 h-14 rounded-2xl shrink-0 relative overflow-hidden" style={{ background: m.photos[0] ? undefined : "linear-gradient(135deg, #1a2e26, #0f1f19)", backgroundImage: m.photos[0] ? `url('${m.photos[0]}')` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
-              {m.verified && <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "#10b981", border: "1.5px solid rgba(0,0,0,0.5)" }}><svg width="7" height="7" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg></div>}
+          <button
+            key={m.id}
+            onClick={() => onOpen(m)}
+            className="w-full flex items-center gap-3 p-3 rounded-2xl text-left active:scale-[0.98] transition-all"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              animation: `fadeIn 0.35s ease ${i * 0.05}s both`,
+            }}
+          >
+            <div
+              className="w-14 h-14 rounded-2xl shrink-0 relative overflow-hidden"
+              style={{
+                background: m.photos[0] ? undefined : "linear-gradient(135deg, #1a2e26, #0f1f19)",
+                backgroundImage: m.photos[0] ? `url('${m.photos[0]}')` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              {m.verified && (
+                <div
+                  className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
+                  style={{ background: "#10b981", border: "1.5px solid rgba(0,0,0,0.5)" }}
+                >
+                  <svg width="7" height="7" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5"><p className="font-black text-sm truncate" style={{ color: "var(--foreground)", fontFamily: "var(--font-jakarta), system-ui" }}>{m.owner}</p><span className="text-[10px] shrink-0 ml-2" style={{ color: "rgba(255,255,255,0.25)" }}>Match</span></div>
-              <p className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.5)" }}>{m.title}</p>
-              <p className="text-[11px] truncate mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>Toca para iniciar el trueque 💬</p>
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="font-black text-sm truncate" style={{ color: "var(--foreground)", fontFamily: "var(--font-jakarta), system-ui" }}>
+                  {m.owner}
+                </p>
+                <span className="text-[10px] shrink-0 ml-2" style={{ color: "rgba(255,255,255,0.25)" }}>Ahora</span>
+              </div>
+              <p className="text-sm font-medium truncate" style={{ color: "rgba(255,255,255,0.5)" }}>
+                {m.title}
+              </p>
+              <p className="text-[11px] truncate mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
+                Toca para iniciar el trueque 💬
+              </p>
             </div>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></div>
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
           </button>
         ))}
       </div>
     </div>
   );
-}
-
-
-const TAB_CONFIG = [
+}const TAB_CONFIG = [
   {
     id: "discover",
     label: "Descubrir",
@@ -951,40 +1171,118 @@ function NotificationPrompt({ userId }) {
 const ONBOARDING_STEPS = [
   { emoji: "🔄", grad: "linear-gradient(135deg,#10b981,#059669)", title: "Truekea lo que no usas", sub: "Intercambia tus objetos con personas cercanas. Sin dinero, sin complicaciones." },
   { emoji: "👆", grad: "linear-gradient(135deg,#0ea5e9,#0284c7)", title: "Desliza y conecta", sub: "Desliza a la derecha si quieres truekear algo. Si os gustais mutuamente es un match!" },
-  { emoji: "💬", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)", title: "Habla y queda", sub: "Chatea con tu match, poneos de acuerdo y quedais para hacer el trueque en persona." },
-  { emoji: "⭐", grad: "linear-gradient(135deg,#f59e0b,#d97706)", title: "Valora tu experiencia!", sub: "Despues del trueque, valora al otro usuario para construir una comunidad de confianza." },
+  { emoji: "💬", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)", title: "Habla y queda", sub: "Chatea con tu match, poneos de acuerdo y quedáis para hacer el trueque en persona." },
+  { emoji: "📦", grad: "linear-gradient(135deg,#10b981,#0ea5e9)", title: "Sube tu primer producto", sub: "Es lo que vas a ofrecer en los trueques. Buenas fotos y descripción honesta = más matches." },
 ];
-function OnboardingScreen({ onDone }) {
+function OnboardingScreen({ onDone, onAddProduct }) {
   const [step, setStep] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
+  const [slideDir, setSlideDir] = useState(1);
+
+  const goToStep = (newStep, dir = 1) => {
+    if (newStep === step) return;
+    setSlideDir(dir);
+    setAnimKey((k) => k + 1);
+    setStep(newStep);
+  };
+
   const s = ONBOARDING_STEPS[step];
   const isLast = step === ONBOARDING_STEPS.length - 1;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between" style={{ background: "#0a1612" }}>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden" style={{ background: "#0a1612" }}>
+      <style>{`
+        @keyframes slideFromRight { from { transform: translateX(48px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideFromLeft { from { transform: translateX(-48px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      `}</style>
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%)" }} />
         <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle,rgba(14,165,233,0.06),transparent 70%)" }} />
       </div>
+
       <div className="pt-14 pb-4 text-center relative z-10">
         <div className="flex items-center justify-center gap-2">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm" style={{ background: "linear-gradient(135deg,#10b981,#0ea5e9)" }}>T</div>
           <span className="text-white font-black text-xl" style={{ fontFamily: "var(--font-jakarta),system-ui", letterSpacing: "-0.03em" }}>Truekly</span>
         </div>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-8 relative z-10 w-full max-w-sm">
-        <div className="w-28 h-28 rounded-full flex items-center justify-center mb-8" style={{ background: s.grad, boxShadow: "0 16px 48px rgba(0,0,0,0.4)", fontSize: 56, transition: "all 0.4s" }}>{s.emoji}</div>
-        <h2 className="text-3xl font-black text-white text-center mb-4 leading-tight" style={{ fontFamily: "var(--font-jakarta),system-ui", letterSpacing: "-0.03em" }}>{s.title}</h2>
-        <p className="text-center leading-relaxed" style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, maxWidth: 300 }}>{s.sub}</p>
+
+      <div
+        key={animKey}
+        className="flex-1 flex flex-col items-center justify-center px-8 relative z-10 w-full max-w-sm"
+        style={{ animation: `${slideDir > 0 ? "slideFromRight" : "slideFromLeft"} 0.35s cubic-bezier(0.2,0.8,0.2,1) both` }}
+      >
+        <div
+          className="w-28 h-28 rounded-full flex items-center justify-center mb-8"
+          style={{ background: s.grad, boxShadow: "0 20px 56px rgba(0,0,0,0.45)", fontSize: 56 }}
+        >
+          {s.emoji}
+        </div>
+        <h2
+          className="text-3xl font-black text-white text-center mb-4 leading-tight"
+          style={{ fontFamily: "var(--font-jakarta),system-ui", letterSpacing: "-0.03em" }}
+        >
+          {s.title}
+        </h2>
+        <p className="text-center leading-relaxed" style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, maxWidth: 300 }}>
+          {s.sub}
+        </p>
       </div>
+
       <div className="w-full max-w-sm px-6 pb-12 relative z-10">
         <div className="flex justify-center gap-2 mb-6">
           {ONBOARDING_STEPS.map((_, i) => (
-            <button key={i} onClick={() => setStep(i)} style={{ width: i === step ? 24 : 8, height: 8, borderRadius: 4, background: i === step ? "#10b981" : "rgba(255,255,255,0.2)", transition: "all 0.3s", border: "none", cursor: "pointer" }} />
+            <button
+              key={i}
+              onClick={() => goToStep(i, i > step ? 1 : -1)}
+              style={{
+                width: i === step ? 28 : 8,
+                height: 8,
+                borderRadius: 4,
+                background: i === step ? "#10b981" : "rgba(255,255,255,0.2)",
+                transition: "all 0.3s cubic-bezier(0.2,0.8,0.2,1)",
+                border: "none",
+                cursor: "pointer",
+              }}
+            />
           ))}
         </div>
-        <button onClick={() => isLast ? onDone() : setStep(s => s + 1)} className="w-full py-4 rounded-2xl font-black text-white text-lg relative overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.98]" style={{ background: s.grad, boxShadow: "0 8px 32px rgba(16,185,129,0.4)", fontFamily: "var(--font-jakarta),system-ui" }}>
-          {isLast ? "Empezar a truekear!" : "Siguiente"}
-        </button>
-        {!isLast && <button onClick={onDone} className="w-full py-3 text-sm font-semibold transition-opacity hover:opacity-70 mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>Saltar</button>}
+
+        {isLast ? (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={onAddProduct || onDone}
+              className="w-full py-4 rounded-2xl font-black text-white text-lg relative overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.98]"
+              style={{ background: s.grad, boxShadow: "0 8px 32px rgba(16,185,129,0.45)", fontFamily: "var(--font-jakarta),system-ui" }}
+            >
+              ¡Sube tu producto! 📦
+            </button>
+            <button
+              onClick={onDone}
+              className="w-full py-3 text-sm font-semibold transition-opacity hover:opacity-70"
+              style={{ color: "rgba(255,255,255,0.3)" }}
+            >
+              Ahora no, explorar primero
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => goToStep(step + 1, 1)}
+              className="w-full py-4 rounded-2xl font-black text-white text-lg relative overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.98]"
+              style={{ background: s.grad, boxShadow: "0 8px 32px rgba(16,185,129,0.4)", fontFamily: "var(--font-jakarta),system-ui" }}
+            >
+              Siguiente
+            </button>
+            <button
+              onClick={onDone}
+              className="w-full py-3 text-sm font-semibold transition-opacity hover:opacity-70 mt-1"
+              style={{ color: "rgba(255,255,255,0.3)" }}
+            >
+              Saltar
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
