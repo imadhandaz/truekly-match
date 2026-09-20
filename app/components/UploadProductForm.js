@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
 const CATEGORIES = ["Móvil","Consola","Portátil","Tablet","Cámara","Movilidad","Ropa","Hogar","Otro"];
 const MADRID_NEIGHBORHOODS = ["Centro","Chamberí","Salamanca","Retiro","Malasaña","Lavapiés","Moncloa","Chamartín","Tetuán","Latina","Carabanchel","Vallecas","Hortaleza"];
+const MAX_PHOTOS = 4;
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
 export default function UploadProductForm({ onClose, onSave }) {
@@ -19,33 +20,34 @@ export default function UploadProductForm({ onClose, onSave }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
   const { user } = useAuth();
   const supabase = getSupabase();
 
-  const handleFiles = (e) => {
-    const files = Array.from(e.target.files || []);
-    const remaining = 5 - photos.length;
+  const addFiles = useCallback((files) => {
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) return;
     const toAdd = [];
-    for (const file of files.slice(0, remaining)) {
-      if (file.size > MAX_PHOTO_BYTES) { setError(`"${file.name}" supera el límite de 10 MB por foto.`); continue; }
+    for (const file of Array.from(files).slice(0, remaining)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > MAX_PHOTO_BYTES) { setError(`"${file.name}" supera el límite de 10 MB.`); continue; }
       toAdd.push({ file, preview: URL.createObjectURL(file) });
     }
-    setPhotos((p) => [...p, ...toAdd]);
-    e.target.value = "";
-  };
+    if (toAdd.length) { setError(null); setPhotos((p) => [...p, ...toAdd]); }
+  }, [photos.length]);
 
-  const removePhoto = (idx) => {
-    setPhotos((p) => { URL.revokeObjectURL(p[idx].preview); return p.filter((_, i) => i !== idx); });
-  };
+  const handleFiles = (e) => { addFiles(e.target.files || []); e.target.value = ""; };
+  const handleDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
+  const removePhoto = (idx) => { setPhotos((p) => { URL.revokeObjectURL(p[idx].preview); return p.filter((_, i) => i !== idx); }); };
+  const setAsPrimary = (idx) => { if (idx === 0) return; setPhotos((p) => { const next = [...p]; const [item] = next.splice(idx, 1); next.unshift(item); return next; }); };
 
   const isValid = title.trim() && wants.trim() && photos.length > 0;
 
   const submit = async (e) => {
     e.preventDefault();
     if (!isValid || !user) return;
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const photoUrls = [];
       for (let i = 0; i < photos.length; i++) {
@@ -66,9 +68,7 @@ export default function UploadProductForm({ onClose, onSave }) {
       onSave(product);
     } catch (err) {
       setError(err.message || "Error al publicar el producto. Inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
@@ -81,50 +81,71 @@ export default function UploadProductForm({ onClose, onSave }) {
             {loading ? "Subiendo…" : "Publicar"}
           </button>
         </div>
-
-        {error && (
-          <div className="mx-5 mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
-        )}
-
+        {error && <div className="mx-5 mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
         <form id="upload-form" onSubmit={submit} className="px-5 py-5 space-y-5">
-          <Section label="Fotos" hint={`${photos.length}/5 · La primera será la principal`}>
-            <div className="grid grid-cols-3 gap-2">
-              {photos.map(({ preview }, idx) => (
-                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-foreground/10">
-                  <img src={preview} alt="" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">✕</button>
-                  {idx === 0 && <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-brand-green text-white text-[9px] font-bold">PRINCIPAL</span>}
-                </div>
-              ))}
-              {photos.length < 5 && (
-                <button type="button" onClick={() => fileRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed border-foreground/20 hover:border-brand-green flex flex-col items-center justify-center text-foreground/50 hover:text-brand-green transition">
-                  <span className="text-2xl">📷</span>
-                  <span className="text-xs mt-1 font-medium">Añadir</span>
-                </button>
-              )}
+          <div>
+            <div className="flex items-baseline justify-between mb-2">
+              <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">Fotos</label>
+              <span className="text-[11px] text-foreground/40">{photos.length}/{MAX_PHOTOS} fotos · toca para hacer principal</span>
             </div>
+            {photos.length === 0 && (
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileRef.current?.click()}
+                className="w-full rounded-2xl border-2 border-dashed flex flex-col items-center justify-center py-10 cursor-pointer transition-all"
+                style={{ borderColor: dragOver ? "#10b981" : "rgba(255,255,255,0.15)", background: dragOver ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.02)" }}
+              >
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: dragOver ? "linear-gradient(135deg, #10b981, #0ea5e9)" : "rgba(255,255,255,0.06)" }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dragOver ? "white" : "rgba(255,255,255,0.4)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+                <p className="font-bold text-sm" style={{ color: dragOver ? "#10b981" : "rgba(255,255,255,0.5)" }}>{dragOver ? "Suelta las fotos aquí" : "Arrastra fotos o toca para elegir"}</p>
+                <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>Hasta {MAX_PHOTOS} fotos · 10 MB máx por foto</p>
+              </div>
+            )}
+            {photos.length > 0 && (
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                className="grid grid-cols-4 gap-2"
+                style={{ padding: dragOver ? "6px" : "0", borderRadius: 16, border: dragOver ? "2px dashed #10b981" : "2px dashed transparent", transition: "all 0.2s", background: dragOver ? "rgba(16,185,129,0.06)" : "transparent" }}
+              >
+                {photos.map(({ preview }, idx) => (
+                  <div key={idx} className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "1", boxShadow: idx === 0 ? "0 0 0 2.5px #10b981" : "none" }}>
+                    <img src={preview} alt="" className="w-full h-full object-cover" />
+                    {idx !== 0 && <button type="button" onClick={() => setAsPrimary(idx)} className="absolute inset-0 bg-black/0 hover:bg-black/30 transition" aria-label="Hacer principal" />}
+                    {idx === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 py-1 flex items-center justify-center" style={{ background: "rgba(16,185,129,0.85)" }}>
+                        <span className="text-[9px] font-black text-white tracking-wide">PRINCIPAL</span>
+                      </div>
+                    )}
+                    <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center hover:bg-red-500 transition" aria-label="Eliminar foto">✕</button>
+                  </div>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <button type="button" onClick={() => fileRef.current?.click()} className="rounded-xl border-2 border-dashed border-foreground/20 hover:border-brand-green flex flex-col items-center justify-center text-foreground/40 hover:text-brand-green transition" style={{ aspectRatio: "1" }}>
+                    <span className="text-xl leading-none">+</span>
+                  </button>
+                )}
+              </div>
+            )}
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
-          </Section>
+          </div>
 
           <Section label="Título"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: iPhone 13 Pro" maxLength={40} required /></Section>
           <Section label="Detalle (opcional)"><Input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="Ej: 256GB · Negro" maxLength={40} /></Section>
-          <Section label="Categoría">
-            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </Select>
-          </Section>
-          <Section label="Tu barrio">
-            <Select value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>
-              {MADRID_NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}
-            </Select>
-          </Section>
+          <Section label="Categoría"><Select value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</Select></Section>
+          <Section label="Tu barrio"><Select value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>{MADRID_NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}</Select></Section>
           <Section label="Lo cambias por" hint="Sé concreto: más matches"><Input value={wants} onChange={(e) => setWants(e.target.value)} placeholder="Ej: PS5 + diferencia" maxLength={60} required /></Section>
           <Section label="Descripción">
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Estado, motivo del trueque, lo que quieras contar..." maxLength={250} rows={4} />
             <p className="text-[11px] text-foreground/40 text-right mt-1">{description.length}/250</p>
           </Section>
           <Section label="Etiquetas" hint="Separadas por comas"><Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="Sin golpes, Factura, Caja original" /></Section>
-
           <div className="pt-2 pb-6">
             <button type="submit" disabled={!isValid || loading} className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transition ${isValid && !loading ? "bg-gradient-to-r from-brand-green to-brand-blue hover:scale-[1.02]" : "bg-foreground/20 cursor-not-allowed"}`}>
               {loading ? "Publicando…" : isValid ? "Publicar producto" : "Completa los campos obligatorios"}
@@ -147,19 +168,11 @@ function Section({ label, hint, children }) {
     </div>
   );
 }
-
-function Input(props) {
-  return <input {...props} className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 focus:border-brand-blue focus:bg-background focus:outline-none transition placeholder:text-foreground/30 text-foreground" />;
-}
-
-function Textarea(props) {
-  return <textarea {...props} className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 focus:border-brand-blue focus:bg-background focus:outline-none transition placeholder:text-foreground/30 text-foreground resize-none" />;
-}
-
+function Input(props) { return <input {...props} className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 focus:border-brand-blue focus:bg-background focus:outline-none transition placeholder:text-foreground/30 text-foreground" />; }
+function Textarea(props) { return <textarea {...props} className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 focus:border-brand-blue focus:bg-background focus:outline-none transition placeholder:text-foreground/30 text-foreground resize-none" />; }
 function Select(props) {
   return (
     <select {...props} className="w-full px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 focus:border-brand-blue focus:bg-background focus:outline-none transition text-foreground appearance-none"
-      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23042f2e' d='M6 8L0 0h12z' opacity='0.5'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center", paddingRight: "40px" }}
-    />
+      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23042f2e' d='M6 8L0 0h12z' opacity='0.5'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center", paddingRight: "40px" }} />
   );
-    }
+}
