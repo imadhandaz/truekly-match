@@ -9,6 +9,16 @@ const MY_PRODUCT = {
   owner: "Tú",
 };
 
+// Returns true if the card's "wants" text overlaps meaningfully with user's product titles
+function isCompatible(wants = "", myProducts = []) {
+  if (!wants || !myProducts.length) return false;
+  const wl = wants.toLowerCase();
+  return myProducts.some((p) => {
+    const words = (p.title || "").toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+    return words.some((w) => wl.includes(w));
+  });
+}
+
 export default function SwipeDeck({
   items,
   onMatch,
@@ -17,6 +27,7 @@ export default function SwipeDeck({
   outOfSwipes,
   onUpgrade,
   userId,
+  myProducts = [],
 }) {
   const [index, setIndex] = useState(0);
   const [photoIdx, setPhotoIdx] = useState(0);
@@ -86,9 +97,6 @@ export default function SwipeDeck({
 
     const positive = choice === "yes" || choice === "super";
 
-    // Logged-in users: the parent (onSwipe) owns the real API call + match
-    // detection + modal. Only show a local teaser match here for signed-out
-    // guests browsing without an account, so they get a taste of the flow.
     setTimeout(() => {
       if (positive && !userId) {
         const chance =
@@ -159,8 +167,8 @@ export default function SwipeDeck({
   return (
     <>
       <div className="relative w-full max-w-sm mx-auto" style={{ aspectRatio: "3/4.6" }}>
-        {next2 && <Card item={next2} depth={2} photoIdx={0} />}
-        {next1 && <Card item={next1} depth={1} photoIdx={0} />}
+        {next2 && <Card item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}
+        {next1 && <Card item={next1} depth={1} photoIdx={0} myProducts={myProducts} />}
 
         <div
           onPointerDown={onPointerDown}
@@ -183,10 +191,10 @@ export default function SwipeDeck({
             expanded={expanded}
             dragging={dragging}
             dragX={drag.x}
+            myProducts={myProducts}
           />
         </div>
 
-        {/* Action buttons */}
         <div className="absolute -bottom-28 left-0 right-0 flex justify-center items-end gap-5">
           <ActionButton onClick={() => commit("no")} label="PASO" type="no">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
@@ -253,11 +261,13 @@ function ActionButton({ children, onClick, label, type, large }) {
   );
 }
 
-function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expanded = false, dragging = false, dragX = 0 }) {
+function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expanded = false, dragging = false, dragX = 0, myProducts = [] }) {
   const scale = 1 - depth * 0.045;
   const translateY = depth * 14;
   const opacity = depth === 0 ? 1 : 0.95 - depth * 0.18;
   const photos = item.photos || [item.image];
+
+  const compatible = depth === 0 && isCompatible(item.wants, myProducts);
 
   const glowColor = yesOpacity > 0.1
     ? `rgba(16,185,129,${yesOpacity * 0.7})`
@@ -329,6 +339,22 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           <div className="px-5 py-2.5 rounded-2xl border-[3px] border-red-500 font-black text-2xl uppercase tracking-wide" style={{ background: "rgba(255,255,255,0.97)", color: "#ef4444", boxShadow: "0 6px 24px rgba(239,68,68,0.45)" }}>
             PASO ✕
           </div>
+        </div>
+      )}
+
+      {compatible && (
+        <div
+          className="absolute z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs text-white"
+          style={{
+            top: item.gold ? 56 : 10,
+            left: 14,
+            background: "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(14,165,233,0.9))",
+            boxShadow: "0 2px 16px rgba(16,185,129,0.55)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.2)",
+          }}
+        >
+          ⚡ Encaja contigo
         </div>
       )}
 
