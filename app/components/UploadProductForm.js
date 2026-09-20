@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -22,6 +22,8 @@ export default function UploadProductForm({ onClose, onSave }) {
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
+  const titleRef = useRef(null);
+  useEffect(() => { titleRef.current?.focus(); }, []);
   const { user } = useAuth();
   const supabase = getSupabase();
 
@@ -85,7 +87,7 @@ export default function UploadProductForm({ onClose, onSave }) {
         <form id="upload-form" onSubmit={submit} className="px-5 py-5 space-y-5">
           <div>
             <div className="flex items-baseline justify-between mb-2">
-              <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">Fotos</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-foreground/70">Fotos <span className="text-brand-green normal-case font-semibold tracking-normal text-[10px]">* obligatorio</span></label>
               <span className="text-[11px] text-foreground/40">{photos.length}/{MAX_PHOTOS} fotos · toca para hacer principal</span>
             </div>
             {photos.length === 0 && (
@@ -136,7 +138,7 @@ export default function UploadProductForm({ onClose, onSave }) {
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
           </div>
 
-          <Section label="Título"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: iPhone 13 Pro" maxLength={40} required /></Section>
+          <Section label="Título"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: iPhone 13 Pro" maxLength={40} required autoFocus /></Section>
           <Section label="Detalle (opcional)"><Input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="Ej: 256GB · Negro" maxLength={40} /></Section>
           <Section label="Categoría"><Select value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</Select></Section>
           <Section label="Tu barrio"><Select value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>{MADRID_NEIGHBORHOODS.map((n) => <option key={n} value={n}>{n}</option>)}</Select></Section>
