@@ -100,17 +100,23 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
               transition: "all 0.6s ease 0.7s",
             }}
           >
-            <div style={{ width: 28, height: 1, background: "linear-gradient(to right, transparent, rgba(255,255,255,0.3))" }} />
-            <span className="text-white/60 text-xs font-bold uppercase tracking-[0.22em]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>
-              Dale nueva vida a tus cosas
-            </span>
+            <div style={{ width: 28, height: 1, background: "linear-gradient(to right, transparent, rgba(52,211,153,0.5))" }} />
+           <span
+              className="text-xs font-black tracking-[0.18em]"
+              style={{
+                background: "linear-gradient(90deg, #34d399, #38bdf8)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Lo tuyo · por · lo suyo
+            </span>>
             <div style={{ width: 28, height: 1, background: "linear-gradient(to left, transparent, rgba(255,255,255,0.3))" }} />
           </div>
         </div>
 
         <div
-          className="absolute left-1/2"
-          style={{ top: "42%", transform: "translateX(-50%)", opacity: phase >= 2 ? 1 : 0, transition: "opacity 0.5s ease 1s" }}
+          className="absolute background: "linear-gradient(to left, transparent, rgba(56,189,248,0.5))"acity: phase >= 2 ? 1 : 0, transition: "opacity 0.5s ease 1s" }}
         >
           <div
             className="flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap"
@@ -204,8 +210,7 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
           ))}
         </div>
 
-        <p className="text-center text-[11px] mt-3 text-white/25">
-          Al continuar aceptas los{" "}
+        <p className="text-center text-[11px] mt-3 text-white/25"text-white/55 font-semiboldaceptas los{" "}
           <span className="text-white/40 underline underline-offset-2">Términos</span>
           {" "}y la{" "}
           <span className="text-white/40 underline underline-offset-2">Política de privacidad</span>
