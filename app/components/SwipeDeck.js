@@ -198,7 +198,7 @@ export default function SwipeDeck({
           />
         </div>
 
-        <div className="absolute -bottom-28 left-0 right-0 flex justify-center items-end gap-5">
+        <div className="absolute -bottom-[88px] left-0 right-0 flex justify-center items-end gap-5">
           <ActionButton onClick={() => commit("no")} label="PASO" type="no">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -288,8 +288,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         transform: `scale(${scale}) translateY(${translateY}px)`,
         opacity,
         zIndex: 10 - depth,
-        background: "#1a1a1a",
-        boxShadow: depth === 0 && (yesOpacity > 0.1 || noOpacity > 0.1)
+        background: "#1aphotos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, #0a1f2e 50%, #071612 100%)"      boxShadow: depth === 0 && (yesOpacity > 0.1 || noOpacity > 0.1)
           ? `0 0 0 3px ${glowColor}, 0 24px 60px rgba(0,0,0,0.4)`
           : "0 24px 60px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.15)",
         transition: dragging ? "box-shadow 0.1s ease" : "box-shadow 0.3s ease",
