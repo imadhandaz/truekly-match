@@ -532,23 +532,20 @@ function HomeInner() {
             )}
             {loaded && remainingSwipes <= 5 && remainingSwipes > 0 && (
               <button
-                onClick={() => openGold("Te quedan pocos swipes hoy")}
-                className="w-full max-w-sm mb-4 pclassName="w-full max-w-sm mb-4 p-3 rounded-xl flex items-center gap-3 hover:scale-[1.01] transition animate-fadeIn"
-                style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}<span className="text-xl">⚡</span>
-                <div className="flex-1 text-left">
-                  <p className="text-xs font-bold text-foreground">
-                    TclassName="text-xs font-bold" style={{ color: "#fbbf24" }}>                 </p>
-                  <p className="text-[11px] text-foreground/60">
-                    Hazte Gold para iclassName="text-[11px]" style={{ color: "rgba(251,191,36,0.6)" }}>      </div>
-                <span className="text-orange-500 font-bold">→</span>
-              </button>
-            )}
-            <span className="font-bold" style={{ color: "#f59e0b" }}>           onClick={() => user ? fetchAll(user.id) : fetchPublicProducts(null)}
-                className="w-full max-w-sm mb-4 p-4 rounded-2xl border border-red-500/20 text-center animate-fadeIn hover:scale-[1.01] transition"
-                style={{ background: "rgba(239,68,68,0.08)" }}
+                onClick={() => openGold('Te quedan pocos swipes hoy')}
+                className="w-full max-w-sm mb-4 p-3 rounded-xl flex items-center gap-3 hover:scale-[1.01] transition animate-fadeIn"
+                style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}
               >
-                <p className="text-sm font-bold text-red-400 mb-1">⚠️ {fetchError}</p>
-                <p className="text-xs text-foreground/50">Toca para reintentar</p>
+                <span className="text-xl">⚡</span>
+                <div className="flex-1 text-left">
+                  <p className="text-xs font-bold" style={{ color: "#fbbf24" }}>
+                    Te quedan <b>{remainingSwipes}</b> swipes hoy
+                  </p>
+                  <p className="text-[11px]" style={{ color: "rgba(251,191,36,0.6)" }}>
+                    Hazte Gold para ilimitados
+                  </p>
+                </div>
+                <span className="font-bold" style={{ color: "#f59e0b" }}>→</span>
               </button>
             )}
             {loadingProducts ? (
