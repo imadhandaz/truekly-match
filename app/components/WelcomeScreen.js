@@ -26,6 +26,7 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
       className="fixed inset-0 z-50 flex flex-col overflow-hidden"
       style={{ background: "#080f0c" }}
     >
+      {/* Floating particles */}
       {particles.map((p, i) => (
         <div
           key={i}
@@ -46,6 +47,7 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
         />
       ))}
 
+      {/* HERO PHOTO */}
       <div className="relative flex-none overflow-hidden" style={{ height: "67vh" }}>
         <img
           src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=900&h=1400&fit=crop&crop=faces,center"
@@ -57,10 +59,26 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
             transition: "opacity 1s ease, transform 1.4s cubic-bezier(0.2,0.8,0.2,1)",
           }}
         />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 60%, transparent 25%, rgba(0,0,0,0.55) 100%)" }} />
-        <div className="absolute top-0 left-0 right-0" style={{ height: "48%", background: "linear-gradient(to bottom, rgba(8,15,12,0.9) 0%, rgba(8,15,12,0.4) 60%, transparent 100%)" }} />
-        <div className="absolute bottom-0 left-0 right-0" style={{ height: "42%", background: "linear-gradient(to bottom, transparent, rgba(8,15,12,0.98))" }} />
 
+        {/* Cinematic vignette */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(ellipse at 50% 60%, transparent 25%, rgba(0,0,0,0.55) 100%)" }}
+        />
+
+        {/* Top gradient for logo readability */}
+        <div
+          className="absolute top-0 left-0 right-0"
+          style={{ height: "48%", background: "linear-gradient(to bottom, rgba(8,15,12,0.9) 0%, rgba(8,15,12,0.4) 60%, transparent 100%)" }}
+        />
+
+        {/* Bottom gradient merging to dark panel */}
+        <div
+          className="absolute bottom-0 left-0 right-0"
+          style={{ height: "42%", background: "linear-gradient(to bottom, transparent, rgba(8,15,12,0.98))" }}
+        />
+
+        {/* LOGO BLOCK */}
         <div
           className="absolute top-0 left-0 right-0 flex flex-col items-center"
           style={{
@@ -70,6 +88,7 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
             transition: "opacity 0.8s ease 0.25s, transform 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.25s",
           }}
         >
+          {/* Icon */}
           <div
             className="relative w-[72px] h-[72px] rounded-[24px] flex items-center justify-center mb-3"
             style={{
@@ -78,20 +97,36 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
             }}
           >
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3"
+                stroke="white"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             {phase >= 2 && (
-              <div className="absolute inset-0 rounded-[24px]" style={{ animation: "glow-pulse 2.8s ease-out 1.2s infinite" }} />
+              <div
+                className="absolute inset-0 rounded-[24px]"
+                style={{ animation: "glow-pulse 2.8s ease-out 1.2s infinite" }}
+              />
             )}
           </div>
 
+          {/* Wordmark */}
           <span
             className="text-white font-black leading-none"
-            style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif", fontSize: 54, letterSpacing: "-0.03em", textShadow: "0 2px 24px rgba(0,0,0,0.6)" }}
+            style={{
+              fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+              fontSize: 54,
+              letterSpacing: "-0.03em",
+              textShadow: "0 2px 24px rgba(0,0,0,0.6)",
+            }}
           >
             Truekly
           </span>
 
+          {/* Tagline */}
           <div
             className="flex items-center gap-2.5 mt-2.5"
             style={{
@@ -101,32 +136,49 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
             }}
           >
             <div style={{ width: 28, height: 1, background: "linear-gradient(to right, transparent, rgba(52,211,153,0.5))" }} />
-           <span
+            <span
               className="text-xs font-black tracking-[0.18em]"
               style={{
                 background: "linear-gradient(90deg, #34d399, #38bdf8)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
+                textShadow: "none",
               }}
             >
               Lo tuyo · por · lo suyo
-            </span>>
-            <div style={{ width: 28, height: 1, background: "linear-gradient(to left, transparent, rgba(255,255,255,0.3))" }} />
+            </span>
+            <div style={{ width: 28, height: 1, background: "linear-gradient(to left, transparent, rgba(56,189,248,0.5))" }} />
           </div>
         </div>
 
+        {/* Social proof badge */}
         <div
-          className="absolute background: "linear-gradient(to left, transparent, rgba(56,189,248,0.5))"acity: phase >= 2 ? 1 : 0, transition: "opacity 0.5s ease 1s" }}
+          className="absolute left-1/2"
+          style={{
+            top: "42%",
+            transform: "translateX(-50%)",
+            opacity: phase >= 2 ? 1 : 0,
+            transition: "opacity 0.5s ease 1s",
+          }}
         >
           <div
             className="flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap"
-            style={{ background: "rgba(16,185,129,0.12)", backdropFilter: "blur(16px)", border: "1px solid rgba(16,185,129,0.35)", boxShadow: "0 4px 24px rgba(16,185,129,0.18)" }}
+            style={{
+              background: "rgba(16,185,129,0.12)",
+              backdropFilter: "blur(16px)",
+              border: "1px solid rgba(16,185,129,0.35)",
+              boxShadow: "0 4px 24px rgba(16,185,129,0.18)",
+            }}
           >
-            <div className="w-2 h-2 rounded-full bg-emerald-400" style={{ animation: "pulse-dot 1.6s ease-in-out infinite", boxShadow: "0 0 8px #10b981" }} />
+            <div
+              className="w-2 h-2 rounded-full bg-emerald-400"
+              style={{ animation: "pulse-dot 1.6s ease-in-out infinite", boxShadow: "0 0 8px #10b981" }}
+            />
             <span className="text-white text-xs font-bold">1.240 intercambios esta semana</span>
           </div>
         </div>
 
+        {/* Exchange cards */}
         <div
           className="absolute bottom-5 left-0 right-0 flex items-center justify-between px-4"
           style={{
@@ -135,30 +187,66 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
             transition: "all 0.7s cubic-bezier(0.2,0.8,0.2,1) 0.65s",
           }}
         >
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.10)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.18)", boxShadow: "0 8px 28px rgba(0,0,0,0.25)" }}>
-            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=60&h=60&fit=crop" alt="iPhone" className="w-10 h-10 rounded-xl object-cover" style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }} />
+          {/* Left product */}
+          <div
+            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.10)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              boxShadow: "0 8px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
+            }}
+          >
+            <img
+              src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=60&h=60&fit=crop"
+              alt="iPhone"
+              className="w-10 h-10 rounded-xl object-cover"
+              style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
+            />
             <div>
               <p className="text-white text-xs font-black leading-tight">iPhone 14</p>
               <p className="text-emerald-400 text-[11px] font-semibold mt-0.5">ofrece →</p>
             </div>
           </div>
 
-          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)", boxShadow: "0 4px 24px rgba(16,185,129,0.65), 0 0 0 3px rgba(255,255,255,0.08)" }}>
+          {/* Swap icon */}
+          <div
+            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+              boxShadow: "0 4px 24px rgba(16,185,129,0.65), 0 0 0 3px rgba(255,255,255,0.08)",
+            }}
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
 
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl" style={{ background: "rgba(255,255,255,0.10)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.18)", boxShadow: "0 8px 28px rgba(0,0,0,0.25)" }}>
+          {/* Right product */}
+          <div
+            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.10)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              boxShadow: "0 8px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
+            }}
+          >
             <div>
               <p className="text-white text-xs font-black leading-tight">Samsung S24</p>
               <p className="text-sky-400 text-[11px] font-semibold mt-0.5">← ofrece</p>
             </div>
-            <img src="https://images.unsplash.com/photo-1567581935884-3349723552ca?w=60&h=60&fit=crop" alt="Samsung" className="w-10 h-10 rounded-xl object-cover" style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }} />
+            <img
+              src="https://images.unsplash.com/photo-1567581935884-3349723552ca?w=60&h=60&fit=crop"
+              alt="Samsung"
+              className="w-10 h-10 rounded-xl object-cover"
+              style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
+            />
           </div>
         </div>
       </div>
 
+      {/* BOTTOM PANEL */}
       <div
         className="flex-1 flex flex-col justify-center px-6 pb-10 pt-5 relative"
         style={{
@@ -168,41 +256,82 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
           transition: "all 0.65s cubic-bezier(0.2,0.8,0.2,1)",
         }}
       >
-        <div className="absolute top-0 left-10 right-10" style={{ height: 1, background: "linear-gradient(to right, transparent, rgba(16,185,129,0.45), rgba(14,165,233,0.45), transparent)" }} />
+        {/* Top edge glow line */}
+        <div
+          className="absolute top-0 left-10 right-10"
+          style={{ height: 1, background: "linear-gradient(to right, transparent, rgba(16,185,129,0.45), rgba(14,165,233,0.45), transparent)" }}
+        />
 
+        {/* Copy block */}
         <div className="text-center mb-6">
           <h2
             className="font-black text-white leading-tight mb-2"
-            style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif", fontSize: 30, letterSpacing: "-0.025em" }}
+            style={{
+              fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+              fontSize: 30,
+              letterSpacing: "-0.025em",
+            }}
           >
             Intercambia lo que tienes
             <br />
-            <span style={{ background: "linear-gradient(90deg, #10b981 0%, #0ea5e9 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <span
+              style={{
+                background: "linear-gradient(90deg, #10b981 0%, #0ea5e9 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
               por lo que quieres
             </span>
           </h2>
-          <p className="text-white/45 text-sm font-medium">Sin dinero. Sin complicaciones. Solo trueques.</p>
+          <p className="text-white/45 text-sm font-medium">
+            Sin dinero. Sin complicaciones. Solo trueques.
+          </p>
         </div>
 
+        {/* CTA primary */}
         <button
           onClick={onSignUp}
           className="w-full py-4 rounded-2xl font-black text-lg text-white mb-3 relative overflow-hidden transition-all active:scale-95 hover:opacity-95"
-          style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 45%, #0ea5e9 100%)", boxShadow: "0 10px 36px rgba(16,185,129,0.5), 0 2px 10px rgba(0,0,0,0.3)", fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
+          style={{
+            background: "linear-gradient(135deg, #10b981 0%, #059669 45%, #0ea5e9 100%)",
+            backgroundSize: "200% 100%",
+            boxShadow: "0 10px 36px rgba(16,185,129,0.5), 0 2px 10px rgba(0,0,0,0.3)",
+            fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+          }}
         >
           <span className="relative z-10">Empezar gratis</span>
-          <div className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)", animation: "shimmer-btn 3s ease-in-out 1.5s infinite" }} />
+          <div
+            className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            style={{
+              background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)",
+              animation: "shimmer-btn 3s ease-in-out 1.5s infinite",
+            }}
+          />
         </button>
 
+        {/* CTA secondary */}
         <button
           onClick={onSignIn}
           className="w-full py-3.5 rounded-2xl font-semibold text-sm transition-all active:scale-95"
-          style={{ color: "rgba(255,255,255,0.65)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)", fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
+          style={{
+            color: "rgba(255,255,255,0.65)",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+          }}
         >
           Ya tengo cuenta
         </button>
 
+        {/* Trust badges */}
         <div className="flex items-center justify-center gap-5 mt-5 mb-1">
-          {[{ icon: "🔒", label: "100% seguro" }, { icon: "✓", label: "Verificado" }, { icon: "⚡", label: "Instantáneo" }].map(({ icon, label }) => (
+          {[
+            { icon: "🔒", label: "100% seguro" },
+            { icon: "✓", label: "Verificado" },
+            { icon: "⚡", label: "Instantáneo" },
+          ].map(({ icon, label }) => (
             <div key={label} className="flex items-center gap-1.5">
               <span className="text-xs leading-none">{icon}</span>
               <span className="text-[11px] text-white/55 font-semibold">{label}</span>
@@ -210,7 +339,8 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
           ))}
         </div>
 
-        <p className="text-center text-[11px] mt-3 text-white/25"text-white/55 font-semiboldaceptas los{" "}
+        <p className="text-center text-[11px] mt-3 text-white/25">
+          Al continuar aceptas los{" "}
           <span className="text-white/40 underline underline-offset-2">Términos</span>
           {" "}y la{" "}
           <span className="text-white/40 underline underline-offset-2">Política de privacidad</span>
