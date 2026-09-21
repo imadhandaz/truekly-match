@@ -288,9 +288,10 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         transform: `scale(${scale}) translateY(${translateY}px)`,
         opacity,
         zIndex: 10 - depth,
-        background: "#1aphotos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, #0a1f2e 50%, #071612 100%)"      boxShadow: depth === 0 && (yesOpacity > 0.1 || noOpacity > 0.1)
-          ? `0 0 0 3px ${glowColor}, 0 24px 60px rgba(0,0,0,0.4)`
-          : "0 24px 60px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.15)",
+background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, #0a1f2e 50%, #071612 100%)",
+    boxShadow: depth === 0 && (yesOpacity > 0.1 || noOpacity > 0.1)
+      ? `0 0 0 3px ${glowColor}, 0 24px 60px rgba(0,0,0,0.4)`
+      : "0 24px 60px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.15)",
         transition: dragging ? "box-shadow 0.1s ease" : "box-shadow 0.3s ease",
       }}
     >
