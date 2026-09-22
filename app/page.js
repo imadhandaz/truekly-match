@@ -885,46 +885,59 @@ function MatchesList({ matches, onOpen, onDiscover, myProducts = [] }) {
                 {timeAgo(m.created_at)}
               </div>
             )}
-            <div
-              className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
-              style={{
-                background: "rgba(16,185,129,0.95)",
-                boxShadow: "0 2px 12px rgba(16,185,129,0.5)",
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 p-3">
-              <div className="flex items-center gap-2 mb-1.5">
+            {/* Top right: "Nuevo" badge or chat icon */}
+            {(() => {
+              const isNew = m.created_at && (Date.now() - new Date(m.created_at).getTime()) < 86400000 * 2;
+              return isNew ? (
                 <div
-                  className="w-7 h-7 rounded-full shrink-0 border-2"
-                  style={{
-                    backgroundImage: m.photos[0] ? `url('${m.photos[0]}')` : undefined,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    background: m.photos[0] ? undefined : "linear-gradient(135deg,#10b981,#0ea5e9)",
-                    borderColor: "rgba(255,255,255,0.4)",
-                  }}
-                />
-                <div className="flex items-center gap-1 min-w-0">
-                  <p className="text-white/80 font-semibold truncate" style={{ fontSize: 11 }}>{m.owner}</p>
-                  {m.verified && (
-                    <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: "#10b981" }}>
-                      <svg width="6" height="6" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    </span>
-                  )}
+                  className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full animate-badge-pop"
+                  style={{ background: "rgba(239,68,68,0.9)", backdropFilter: "blur(8px)", fontSize: 9, fontWeight: 900, color: "white", boxShadow: "0 2px 10px rgba(239,68,68,0.5)" }}
+                >
+                  Nuevo
                 </div>
+              ) : (
+                <div
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(16,185,129,0.9)", boxShadow: "0 2px 12px rgba(16,185,129,0.5)" }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+              );
+            })()}
+            {/* Bottom: info */}
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              {/* Owner row */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <div
+                  className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-black text-white"
+                  style={{ background: "linear-gradient(135deg,#10b981,#0ea5e9)" }}
+                >
+                  {(m.owner || "U").charAt(0).toUpperCase()}
+                </div>
+                <p className="text-white/75 font-semibold truncate" style={{ fontSize: 10 }}>{m.owner}</p>
+                {m.verified && (
+                  <span className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "#10b981", fontSize: 6, color: "white" }}>✓</span>
+                )}
               </div>
-              <p className="font-black text-white text-sm leading-tight" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>
+              <p className="font-black text-white text-sm leading-tight mb-1.5" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>
                 {m.title}
               </p>
-              {(() => { const h = getCompatHint(m); return h ? (
-                <p className="mt-1 truncate font-semibold" style={{ fontSize: 9, color: "#34d399" }}>⚡ {h}</p>
-              ) : (
-                <p className="text-white/45 mt-1 truncate" style={{ fontSize: 10 }}>Toca para chatear 💬</p>
-              ); })()}
+              {m.my_title && (
+                <div
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full mb-1"
+                  style={{ background: "rgba(14,165,233,0.25)", border: "1px solid rgba(14,165,233,0.4)", fontSize: 8, color: "#7dd3fc", fontWeight: 700 }}
+                >
+                  <span>Tu:</span>
+                  <span className="text-white truncate max-w-[70px]">{m.my_title}</span>
+                </div>
+              )}
+              {(() => { const hint = getCompatHint(m); return hint ? (
+                <p className="truncate font-semibold" style={{ fontSize: 8, color: "#34d399" }}>
+                  ⚡ {hint}
+                </p>
+              ) : null; })()}
             </div>
           </button>
         ))}
