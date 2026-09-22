@@ -178,7 +178,7 @@ h1, h2, h3 {
   50%       { transform: scale(1.2); }
 }
 
-/* ── New micro-interaction animations ─────────────────────── */
+/* ── Micro-interaction animations ─────────────────────────── */
 
 @keyframes float {
   0%   { transform: translateY(0px) scale(1); }
@@ -216,11 +216,37 @@ h1, h2, h3 {
   100% { background-position: 0% 50%; }
 }
 
+@keyframes matchPop {
+  0%   { transform: scale(0) rotate(-5deg); opacity: 0; }
+  60%  { transform: scale(1.05) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+}
+
+@keyframes shimmer-card {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badge-pop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  65%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 @keyframes starBounce {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.4); }
-  70%  { transform: scale(0.9); }
-  100% { transform: scale(1.1); }
+  0%, 100% { transform: scale(1); }
+  40%      { transform: scale(1.35); }
+  60%      { transform: scale(0.9); }
 }
 
 /* ── Utility animation classes ────────────────────────────── */
@@ -234,7 +260,16 @@ h1, h2, h3 {
 .animate-float        { animation: float 3s ease-in-out infinite; }
 .animate-spin-slow    { animation: spin 3s linear infinite; }
 .animate-tab-pop      { animation: tab-pop 300ms cubic-bezier(0.2, 1.4, 0.5, 1) both; }
-.animate-starBounce   { animation: starBounce 350ms cubic-bezier(0.2, 1.4, 0.5, 1) both; }
+.animate-match-pop    { animation: matchPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.animate-pulse-green  { animation: pulse-green 2s infinite; }
+.animate-shimmer      { background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%); background-size: 200% 100%; animation: shimmer-card 2s infinite; }
+.animate-slide-up     { animation: slide-up-fade 0.35s ease-out both; }
+.animate-badge-pop    { animation: badge-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── Typography scale ─────────────────────────────────────── */
+.text-display  { font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; }
+.text-headline { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; }
+.text-label    { font-size: 0.625rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
 
 /* Skeleton shimmer */
 .skeleton {
@@ -266,9 +301,3 @@ h1, h2, h3 {
 .pb-safe  { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .pt-safe  { padding-top: env(safe-area-inset-top, 0px); }
 .mb-safe  { margin-bottom: env(safe-area-inset-bottom, 0px); }
-
-/* ── Scroll behavior ──────────────────────────────────────── */
-.scroll-smooth-container {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
