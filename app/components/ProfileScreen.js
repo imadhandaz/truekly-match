@@ -19,64 +19,6 @@ function activityDaysAgo(myProducts = []) {
   return `Activo hace ${Math.floor(days / 30)} meses`;
 }
 
-function ProfileCompleteness({ verified, myProducts, profile, onVerify, onAdd }) {
-  const checks = [
-    { label: "Foto de perfil", done: !!profile?.avatar_url, action: null },
-    { label: "Verificar identidad", done: !!verified, action: onVerify },
-    { label: "Al menos 2 productos", done: myProducts.length >= 2, action: onAdd },
-  ];
-  const doneCount = checks.filter((c) => c.done).length;
-  if (doneCount === checks.length) return null; // fully complete, hide
-  const pct = Math.round((doneCount / checks.length) * 100);
-
-  return (
-    <div
-      className="w-full mb-5 p-4 rounded-2xl border border-foreground/10 animate-fadeIn"
-      style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.06), rgba(14,165,233,0.06))" }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <p className="font-black text-sm" style={{ background: "linear-gradient(135deg, #047857, #0369a1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          Completa tu perfil
-        </p>
-        <span className="text-xs font-black text-foreground/50">{doneCount}/{checks.length}</span>
-      </div>
-      {/* Progress bar */}
-      <div className="w-full h-1.5 rounded-full mb-3 overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, background: "linear-gradient(90deg, #10b981, #0ea5e9)" }}
-        />
-      </div>
-      <div className="space-y-2">
-        {checks.map(({ label, done, action }) => (
-          <div
-            key={label}
-            className="flex items-center gap-2.5"
-            onClick={!done && action ? action : undefined}
-            style={{ cursor: !done && action ? "pointer" : "default" }}
-          >
-            <div
-              className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs font-black"
-              style={{
-                background: done ? "linear-gradient(135deg, #10b981, #059669)" : "rgba(255,255,255,0.08)",
-                color: done ? "white" : "rgba(255,255,255,0.3)",
-              }}
-            >
-              {done ? "✓" : "○"}
-            </div>
-            <span className="text-xs font-semibold" style={{ color: done ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.45)", textDecoration: done ? "line-through" : "none" }}>
-              {label}
-            </span>
-            {!done && action && (
-              <span className="ml-auto text-[10px] font-black" style={{ color: "#10b981" }}>Hacer →</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function ProfileScreen({
   myProducts = [],
   onAdd,
@@ -125,8 +67,11 @@ export default function ProfileScreen({
       <div className="flex items-center gap-5 mb-5">
         <div className="relative shrink-0">
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-2xl"
-            style={{ background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)" }}
+            className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black animate-pulse-green"
+            style={{
+              background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)",
+              boxShadow: "0 0 0 4px rgba(16,185,129,0.2), 0 8px 32px rgba(16,185,129,0.3)",
+            }}
           >
             {initial}
           </div>
@@ -155,7 +100,7 @@ export default function ProfileScreen({
                 className="px-2 py-0.5 rounded-full text-white text-[10px] font-black shrink-0"
                 style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}
               >
-                VERIFICADO
+                VERIFICADO ✓
               </span>
             )}
           </div>
@@ -168,6 +113,7 @@ export default function ProfileScreen({
           )}
           {user && (
             <button
+              type="button"
               onClick={onEditProfile}
               className="px-3 py-1 rounded-full text-xs font-bold border border-foreground/15 text-foreground/60 hover:border-brand-green hover:text-brand-green transition"
             >
@@ -177,60 +123,82 @@ export default function ProfileScreen({
         </div>
       </div>
 
-      {/* Rating */}
-      {ratingCount > 0 && (
-        <div className="flex items-center gap-1.5 mb-5 px-3.5 py-2 rounded-full bg-foreground/4 border border-foreground/8 w-fit">
-          <span className="text-amber-400 text-sm">★</span>
-          <span className="text-sm font-black">{avgRating.toFixed(1)}</span>
-          <span className="text-xs text-foreground/45">
-            ({ratingCount} valoración{ratingCount !== 1 ? "es" : ""})
+      {/* Stats row — trust signals */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {/* Trueques completados — key trust signal */}
+        <div
+          className="flex flex-col items-center py-3 rounded-2xl relative overflow-hidden"
+          style={{
+            background: tradeCount > 0
+              ? "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.1))"
+              : "rgba(0,0,0,0.04)",
+            border: tradeCount > 0 ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(0,0,0,0.06)",
+          }}
+        >
+          <span
+            className="text-2xl font-black leading-none"
+            style={{ color: tradeCount > 0 ? "#10b981" : "var(--foreground)" }}
+          >
+            {tradeCount}
+          </span>
+          <span className="text-[10px] font-bold mt-0.5" style={{ color: tradeCount > 0 ? "#10b981" : "var(--foreground)", opacity: tradeCount > 0 ? 0.85 : 0.45 }}>
+            Trueques ✓
           </span>
         </div>
-      )}
-
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2 mb-5">
-        {[
-          { label: "Productos", value: myProducts.length },
-          { label: "Matches", value: matchCount },
-          { label: "Trueques", value: tradeCount, highlight: tradeCount > 0 },
-        ].map(({ label, value, highlight }) => (
-          <div
-            key={label}
-            className="flex flex-col items-center py-3 rounded-2xl border border-foreground/8"
-            style={{ background: highlight ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.03)" }}
-          >
-            <span className="text-xl font-black" style={highlight ? { color: "#10b981" } : {}}>{value}</span>
-            <span className="text-[11px] text-foreground/50 font-semibold mt-0.5">{label}</span>
-          </div>
-        ))}
+        {/* Rating */}
+        <div
+          className="flex flex-col items-center py-3 rounded-2xl"
+          style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)" }}
+        >
+          {ratingCount > 0 ? (
+            <>
+              <span className="text-2xl font-black leading-none" style={{ color: "#f59e0b" }}>
+                {avgRating.toFixed(1)}
+              </span>
+              <span className="text-[10px] font-bold mt-0.5 text-foreground/50">
+                ★ {ratingCount} reseñas
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-xl font-black leading-none text-foreground/25">—</span>
+              <span className="text-[10px] font-bold mt-0.5 text-foreground/40">Sin reseñas</span>
+            </>
+          )}
+        </div>
+        {/* Matches */}
+        <div
+          className="flex flex-col items-center py-3 rounded-2xl"
+          style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)" }}
+        >
+          <span className="text-2xl font-black leading-none">{matchCount}</span>
+          <span className="text-[10px] font-bold mt-0.5 text-foreground/45">Matches</span>
+        </div>
       </div>
+
+      {/* Member since */}
+      {user?.created_at && (
+        <p className="text-[11px] text-foreground/40 font-medium mb-5">
+          Miembro desde {new Date(user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })} · {myProducts.length} producto{myProducts.length !== 1 ? "s" : ""} publicado{myProducts.length !== 1 ? "s" : ""}
+        </p>
+      )}
 
       {!user && (
         <button
+          type="button"
           onClick={onSignIn}
-          className="w-full mb-6 py-4 rounded-2xl text-white font-bold shadow-lg hover:scale-[1.01] active:scale-95 transition"
+          className="w-full mb-6 py-4 rounded-2xl text-white font-bold shadow-lg hover:scale-[1.01] transition"
           style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}
         >
           Inicia sesión o regístrate
         </button>
       )}
 
-      {/* Profile completeness — shown when user has no photo, not verified, or <2 products */}
-      {user && (
-        <ProfileCompleteness
-          verified={verified}
-          myProducts={myProducts}
-          profile={profile}
-          onVerify={onVerify}
-          onAdd={onAdd}
-        />
-      )}
-
       {!verified && (
         <button
+          type="button"
           onClick={onVerify}
-          className="w-full mb-6 p-4 rounded-2xl border border-brand-green/30 text-left hover:scale-[1.01] active:scale-95 transition flex items-center gap-3 animate-fadeIn"
+          className="w-full mb-6 p-4 rounded-2xl border border-brand-green/30 text-left hover:scale-[1.01] transition flex items-center gap-3 animate-fadeIn"
           style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(14,165,233,0.08))" }}
         >
           <div
@@ -253,12 +221,13 @@ export default function ProfileScreen({
 
       {/* Products section header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[10px] uppercase tracking-widest font-black text-foreground/50">
+        <h3 className="text-sm font-black uppercase tracking-wider text-foreground/60">
           Mis productos ({myProducts.length})
         </h3>
         <div className="flex items-center gap-2">
           {isGold && (
             <button
+              type="button"
               onClick={boostCredits > 0 ? null : onBuyBoosts}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition ${
                 boostCredits > 0
@@ -270,8 +239,9 @@ export default function ProfileScreen({
             </button>
           )}
           <button
+            type="button"
             onClick={onAdd}
-            className="text-sm font-black px-3 py-1 rounded-full text-white shadow transition hover:scale-105 active:scale-95"
+            className="text-sm font-black px-3 py-1 rounded-full text-white shadow transition hover:scale-105"
             style={{ background: "linear-gradient(135deg, #047857, #0369a1)" }}
           >
             + Nuevo
@@ -281,6 +251,7 @@ export default function ProfileScreen({
 
       {myProducts.length === 0 ? (
         <button
+          type="button"
           onClick={onAdd}
           className="w-full py-14 rounded-3xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center gap-2 text-foreground/50 hover:text-brand-green"
         >
@@ -300,14 +271,12 @@ export default function ProfileScreen({
             >
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                style={{
-                  backgroundImage: p.photos?.[0] ? `url('${p.photos[0]}')` : undefined,
-                  background: p.photos?.[0] ? undefined : "linear-gradient(135deg, #1a2e26, #0f1f19)",
-                }}
+                style={{ backgroundImage: `url('${p.photos?.[0]}')` }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <div className="absolute top-2 left-2 right-2 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
+                  type="button"
                   onClick={() => {
                     if (!isGold) { onBoost?.(p); return; }
                     if (boostCredits > 0) { onBoost?.(p); }
@@ -324,6 +293,7 @@ export default function ProfileScreen({
                   🚀 {isGold && boostCredits <= 0 ? "Sin boosts" : "BOOST"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => onDelete(p.id)}
                   className="w-8 h-8 rounded-full bg-black/60 text-white text-sm flex items-center justify-center hover:bg-red-500 transition"
                   aria-label="Eliminar"
@@ -338,6 +308,7 @@ export default function ProfileScreen({
             </div>
           ))}
           <button
+            type="button"
             onClick={onAdd}
             className="rounded-2xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center justify-center text-foreground/40 hover:text-brand-green"
             style={{ aspectRatio: "3/4" }}
@@ -351,6 +322,7 @@ export default function ProfileScreen({
       {/* Settings */}
       <div className="mt-8 space-y-2.5">
         <button
+          type="button"
           onClick={onToggleDark}
           className="w-full p-4 rounded-2xl bg-foreground/4 hover:bg-foreground/8 transition flex items-center justify-between border border-foreground/6"
         >
@@ -384,12 +356,14 @@ export default function ProfileScreen({
         {user && (
           <>
             <button
+              type="button"
               onClick={onSignOut}
               className="w-full p-3.5 rounded-2xl text-sm font-bold text-foreground/60 hover:bg-foreground/5 transition border border-foreground/8"
             >
               Cerrar sesión
             </button>
             <button
+              type="button"
               onClick={onDeleteAccount}
               className="w-full p-3 rounded-2xl text-xs font-bold text-red-500/70 hover:bg-red-50 dark:hover:bg-red-900/10 transition"
             >
