@@ -34,10 +34,10 @@ export default function SwipeDeck({
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [decision, setDecision] = useState(null);
-  const committingRef = useRef(false);
   const [expanded, setExpanded] = useState(false);
   const [matchedProduct, setMatchedProduct] = useState(null);
   const startRef = useRef({ x: 0, y: 0, t: 0 });
+  const isSwipingRef = useRef(false);
 
   const current = items[index];
   const next1 = items[index + 1];
@@ -87,13 +87,14 @@ export default function SwipeDeck({
   };
 
   const commit = (choice) => {
-    if (committingRef.current) return;
+    if (isSwipingRef.current) return;
     if (outOfSwipes) {
       onUpgrade?.();
       setDrag({ x: 0, y: 0 });
       return;
     }
-    committingRef.current = true;
+
+    isSwipingRef.current = true;
     setDecision(choice);
     onSwipe?.(current, choice);
 
@@ -117,8 +118,8 @@ export default function SwipeDeck({
       setExpanded(false);
       setDrag({ x: 0, y: 0 });
       setDecision(null);
-      committingRef.current = false;
-    }, 280);
+      isSwipingRef.current = false;
+    }, 250);
   };
 
   const closeMatch = () => setMatchedProduct(null);
@@ -144,7 +145,7 @@ export default function SwipeDeck({
           style={{ background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)" }}
         >
           <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)", animation: "shimmer-btn 2.5s ease-in-out infinite" }} />
-          <span style={{ fontSize: 64 }}>🎉</span>
+          <span style={{ fontSize: 64 }}>🔍</span>
         </div>
         <h2
           className="text-3xl font-black mb-3"
@@ -152,8 +153,8 @@ export default function SwipeDeck({
         >
           ¡Has visto todo!
         </h2>
-        <p className="text-foreground/60 text-base leading-relaxed max-w-xs mb-8">
-          Has explorado todos los productos disponibles. Vuelve más tarde o sube algo nuevo.
+        <p className="text-foreground/60 text-base leading-relaxed max-w-xs mb-6">
+          Has explorado todos los productos disponibles. Vuelve mañana o sube algo nuevo para conseguir más matches.
         </p>
         <div className="flex flex-col gap-2 w-full max-w-xs">
           <div className="px-4 py-3 rounded-2xl bg-foreground/5 border border-foreground/10 text-sm text-foreground/60 font-semibold flex items-center gap-2">
@@ -198,6 +199,7 @@ export default function SwipeDeck({
           />
         </div>
 
+        {/* Action buttons */}
         <div className="absolute -bottom-[88px] left-0 right-0 flex justify-center items-end gap-5">
           <ActionButton onClick={() => commit("no")} label="PASO" type="no">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
@@ -235,15 +237,16 @@ export default function SwipeDeck({
 
 function ActionButton({ children, onClick, label, type, large }) {
   const styles = {
-    no: { bg: "rgba(239,68,68,0.12)", color: "#ef4444", border: "2px solid rgba(239,68,68,0.4)", shadow: "0 8px 28px rgba(239,68,68,0.2), 0 2px 8px rgba(0,0,0,0.3)", blur: true },
-    super: { bg: "rgba(14,165,233,0.12)", color: "#38bdf8", border: "2px solid rgba(14,165,233,0.4)", shadow: "0 8px 28px rgba(14,165,233,0.2), 0 2px 8px rgba(0,0,0,0.3)", blur: true },
-    yes: { bg: "linear-gradient(135deg, #10b981, #059669, #0ea5e9)", color: "white", border: "none", shadow: "0 10px 36px rgba(16,185,129,0.5), 0 4px 12px rgba(0,0,0,0.15)" },
+    no: { bg: "rgba(239,68,68,0.12)", color: "#f87171", border: "2px solid rgba(239,68,68,0.4)", shadow: "0 8px 28px rgba(239,68,68,0.2), 0 2px 8px rgba(0,0,0,0.4)", blur: true },
+    super: { bg: "rgba(14,165,233,0.12)", color: "#38bdf8", border: "2px solid rgba(14,165,233,0.4)", shadow: "0 8px 28px rgba(14,165,233,0.2), 0 2px 8px rgba(0,0,0,0.4)", blur: true },
+    yes: { bg: "linear-gradient(135deg, #10b981, #059669, #0ea5e9)", color: "white", border: "none", shadow: "0 10px 36px rgba(16,185,129,0.5), 0 4px 12px rgba(0,0,0,0.3)", blur: false },
   };
   const s = styles[type];
 
   return (
     <div className="flex flex-col items-center gap-1.5">
       <button
+        type="button"
         onClick={onClick}
         className="rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-90"
         style={{
@@ -267,14 +270,14 @@ function ActionButton({ children, onClick, label, type, large }) {
 }
 
 function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expanded = false, dragging = false, dragX = 0, myProducts = [] }) {
-  const scale = 1 - depth * 0.045;
-  const translateY = depth * 14;
-  const opacity = depth === 0 ? 1 : 0.95 - depth * 0.18;
-  const photos = (item.photos || (item.image ? [item.image] : [])).filter(Boolean);
-  const hasPhoto = photos.length > 0 && photos[photoIdx];
+  const scale = 1 - depth * 0.05;
+  const translateY = depth * 10;
+  const opacity = depth === 0 ? 1 : depth === 1 ? 0.7 : 0.4;
+  const photos = (item.photos?.length ? item.photos : item.image ? [item.image] : []).filter(Boolean);
 
   const compatible = depth === 0 && isCompatible(item.wants, myProducts);
 
+  // Dynamic glow border based on drag direction
   const glowColor = yesOpacity > 0.1
     ? `rgba(16,185,129,${yesOpacity * 0.7})`
     : noOpacity > 0.1
@@ -288,22 +291,20 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         transform: `scale(${scale}) translateY(${translateY}px)`,
         opacity,
         zIndex: 10 - depth,
-background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, #0a1f2e 50%, #071612 100%)",
-    boxShadow: depth === 0 && (yesOpacity > 0.1 || noOpacity > 0.1)
-      ? `0 0 0 3px ${glowColor}, 0 24px 60px rgba(0,0,0,0.4)`
-      : "0 24px 60px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.15)",
+        background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, #0a1f2e 50%, #071612 100%)",
+        boxShadow: depth === 0 && (yesOpacity > 0.1 || noOpacity > 0.1)
+          ? `0 0 0 3px ${glowColor}, 0 24px 60px rgba(0,0,0,0.4)`
+          : "0 24px 60px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.15)",
         transition: dragging ? "box-shadow 0.1s ease" : "box-shadow 0.3s ease",
       }}
     >
+      {/* Photo */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: hasPhoto ? `url('${photos[photoIdx]}')` : undefined,
-          background: hasPhoto ? undefined : "linear-gradient(135deg, #1a2e26 0%, #0f1f19 60%, #121a28 100%)",
-          transition: "background-image 0.3s ease",
-        }}
+        style={{ backgroundImage: `url('${photos[photoIdx]}')`, transition: "background-image 0.3s ease" }}
       />
 
+      {/* Photo indicators */}
       {depth === 0 && photos.length > 1 && (
         <div className="absolute top-3 left-3 right-3 flex gap-1.5 z-20">
           {photos.map((_, i) => (
@@ -320,8 +321,10 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
         </div>
       )}
 
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 35%, transparent 50%, rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.95) 100%)" }} />
+      {/* Cinematic gradient overlay — stronger at bottom */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 30%, transparent 45%, rgba(0,0,0,0.6) 72%, rgba(0,0,0,0.92) 100%)" }} />
 
+      {/* YES stamp */}
       {depth === 0 && (
         <div
           className="absolute top-16 left-5 z-20 rotate-[-14deg]"
@@ -337,6 +340,7 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
         </div>
       )}
 
+      {/* NO stamp */}
       {depth === 0 && (
         <div
           className="absolute top-16 right-5 z-20"
@@ -352,12 +356,13 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
         </div>
       )}
 
+      {/* ⚡ Encaja contigo badge */}
       {compatible && (
         <div
-          className="absolute z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs text-white"
+          className="absolute z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs text-white animate-badge-pop"
           style={{
             top: item.gold ? 56 : 10,
-            left: 14,
+            right: 14,
             background: "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(14,165,233,0.9))",
             boxShadow: "0 2px 16px rgba(16,185,129,0.55)",
             backdropFilter: "blur(8px)",
@@ -368,6 +373,7 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
         </div>
       )}
 
+      {/* Gold badge */}
       {item.gold && depth === 0 && (
         <div
           className="absolute top-10 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs text-white"
@@ -377,42 +383,50 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
         </div>
       )}
 
-      <div className="absolute top-10 right-4 z-10 flex flex-col items-end gap-1.5">
-        {item.category && (
-          <span className="px-3 py-1 rounded-full text-xs font-bold shadow-md" style={{ background: "rgba(255,255,255,0.95)", color: "#0369a1" }}>
-            {item.category}
-          </span>
-        )}
-        {item.neighborhood && (
-          <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.92)" }}>
-            📍 {item.neighborhood}
-          </span>
-        )}
-      </div>
+      {/* Category badge — top left */}
+      {item.category && (
+        <div className="absolute top-10 left-4 z-10 flex flex-col items-start gap-1.5">
+          {!item.gold && (
+            <span className="px-3 py-1 rounded-full text-xs font-bold shadow-md" style={{ background: "rgba(255,255,255,0.95)", color: "#0369a1" }}>
+              {item.category}
+            </span>
+          )}
+        </div>
+      )}
 
-      <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+      {/* Bottom info */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+        {/* Title row */}
         <div className="flex items-end gap-2 mb-1">
-          <h3 className="text-[28px] font-black leading-tight drop-shadow-md">{item.title}</h3>
-          {item.storage && <span className="text-base font-light text-white/70 mb-0.5">{item.storage}</span>}
+          <h3 className="text-[26px] font-black leading-tight drop-shadow-md flex-1 min-w-0">{item.title}</h3>
+          {item.storage && <span className="text-sm font-light text-white/70 mb-0.5 shrink-0">{item.storage}</span>}
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
-          <p className="text-sm text-white/85">
-            Por <b className="text-white">{item.owner}</b>
+        {/* Owner row with avatar */}
+        <div className="flex items-center gap-2 mb-3">
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
+            style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)", boxShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
+          >
+            {(item.owner || "U").charAt(0).toUpperCase()}
+          </div>
+          <p className="text-[13px] text-white/90 font-semibold truncate">
+            {item.owner}
           </p>
           {item.verified && (
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[11px] font-black shadow" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}>✓</span>
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-white shrink-0" style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)", fontSize: 8, fontWeight: 900 }}>✓</span>
           )}
-          {item.distance && (
+          {item.neighborhood && (
             <>
-              <span className="text-white/35 text-xs">·</span>
-              <p className="text-xs text-white/65">{item.distance}</p>
+              <span className="text-white/30 text-xs shrink-0">·</span>
+              <p className="text-[11px] text-white/60 truncate">📍 {item.neighborhood}</p>
             </>
           )}
         </div>
 
+        {/* Expanded details */}
         {expanded && (
-          <div className="mb-4 animate-fadeIn">
+          <div className="mb-3 animate-fadeIn">
             <p className="text-sm text-white/90 leading-relaxed mb-3">{item.description}</p>
             {item.tags?.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
@@ -424,6 +438,7 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
               </div>
             )}
             <button
+              type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
@@ -442,21 +457,30 @@ background: photos[photoIdx] ? "#1a1a1a" : "linear-gradient(135deg, #0d2018 0%, 
           </div>
         )}
 
-        <div
-          className="rounded-2xl p-3.5 border border-brand-green/60"
-          style={{ background: "rgba(16,185,129,0.18)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
-        >
-          <div className="flex items-center gap-1.5 mb-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18"/>
-            </svg>
-            <p className="text-[10px] uppercase tracking-widest text-brand-green font-black">Lo cambia por</p>
+        {/* "Busca:" chip pill — compact, always visible */}
+        {item.wants && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white shrink-0"
+              style={{
+                background: "rgba(16,185,129,0.22)",
+                border: "1px solid rgba(16,185,129,0.45)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                boxShadow: "0 2px 10px rgba(16,185,129,0.2)",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18"/>
+              </svg>
+              <span style={{ color: "#a7f3d0" }}>Busca:</span>
+              <span className="text-white max-w-[140px] truncate">{item.wants}</span>
+            </div>
           </div>
-          <p className="text-base font-bold text-white">{item.wants}</p>
-        </div>
+        )}
 
         {!expanded && (
-          <p className="text-center text-[10px] text-white/40 mt-3 tracking-wide">
+          <p className="text-center text-[10px] text-white/35 mt-2.5 tracking-wide">
             Toca para detalles · Desliza fotos por los lados
           </p>
         )}
