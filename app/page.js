@@ -887,6 +887,14 @@ function MatchesList({ matches, onOpen, onDiscover, myProducts = [] }) {
             )}
             {/* Top right: "Nuevo" badge or chat icon */}
             {(() => {
+              if (m.status === 'completed') return (
+                <div
+                  className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full"
+                  style={{ background: "rgba(16,185,129,0.92)", backdropFilter: "blur(8px)", fontSize: 9, fontWeight: 900, color: "white", boxShadow: "0 2px 10px rgba(16,185,129,0.5)" }}
+                >
+                  ✅ Completado
+                </div>
+              );
               const isNew = m.created_at && (Date.now() - new Date(m.created_at).getTime()) < 86400000 * 2;
               return isNew ? (
                 <div
@@ -924,20 +932,24 @@ function MatchesList({ matches, onOpen, onDiscover, myProducts = [] }) {
               <p className="font-black text-white text-sm leading-tight mb-1.5" style={{ fontFamily: "var(--font-jakarta), system-ui" }}>
                 {m.title}
               </p>
-              {m.my_title && (
+              {m.wants && (
                 <div
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full mb-1"
-                  style={{ background: "rgba(14,165,233,0.25)", border: "1px solid rgba(14,165,233,0.4)", fontSize: 8, color: "#7dd3fc", fontWeight: 700 }}
+                  style={{ background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.35)", fontSize: 8, color: "#34d399", fontWeight: 700 }}
                 >
-                  <span>Tu:</span>
-                  <span className="text-white truncate max-w-[70px]">{m.my_title}</span>
+                  <span>Busca:</span>
+                  <span className="text-white truncate max-w-[60px]">{(m.wants||"").slice(0,30)}</span>
                 </div>
               )}
-              {(() => { const hint = getCompatHint(m); return hint ? (
-                <p className="truncate font-semibold" style={{ fontSize: 8, color: "#34d399" }}>
-                  ⚡ {hint}
-                </p>
-              ) : null; })()}
+              {m.my_title && (
+                <div
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(14,165,233,0.18)", border: "1px solid rgba(14,165,233,0.35)", fontSize: 8, color: "#7dd3fc", fontWeight: 700 }}
+                >
+                  <span>Tu ofreces:</span>
+                  <span className="text-white truncate max-w-[50px]">{m.my_title}</span>
+                </div>
+              )}
             </div>
           </button>
         ))}
