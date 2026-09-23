@@ -4,6 +4,7 @@ import Link from "next/link";
 
 function activityDaysAgo(myProducts = []) {
   if (!myProducts.length) return null;
+  // Use the most recent product created_at
   const latest = myProducts
     .map((p) => p.created_at)
     .filter(Boolean)
@@ -67,11 +68,8 @@ export default function ProfileScreen({
       <div className="flex items-center gap-5 mb-5">
         <div className="relative shrink-0">
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black animate-pulse-green"
-            style={{
-              background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)",
-              boxShadow: "0 0 0 4px rgba(16,185,129,0.2), 0 8px 32px rgba(16,185,129,0.3)",
-            }}
+            className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-2xl animate-pulse-green"
+            style={{ background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)", boxShadow: "0 0 0 0 rgba(16,185,129,0.4), 0 8px 32px rgba(16,185,129,0.3)" }}
           >
             {initial}
           </div>
@@ -100,7 +98,7 @@ export default function ProfileScreen({
                 className="px-2 py-0.5 rounded-full text-white text-[10px] font-black shrink-0"
                 style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}
               >
-                VERIFICADO ✓
+                VERIFICADO
               </span>
             )}
           </div>
@@ -125,7 +123,7 @@ export default function ProfileScreen({
 
       {/* Stats row — trust signals */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        {/* Trueques completados — key trust signal */}
+        {/* Trueques completados — most important trust signal */}
         <div
           className="flex flex-col items-center py-3 rounded-2xl relative overflow-hidden"
           style={{
@@ -176,7 +174,7 @@ export default function ProfileScreen({
         </div>
       </div>
 
-      {/* Member since */}
+      {/* Member since + products count */}
       {user?.created_at && (
         <p className="text-[11px] text-foreground/40 font-medium mb-5">
           Miembro desde {new Date(user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })} · {myProducts.length} producto{myProducts.length !== 1 ? "s" : ""} publicado{myProducts.length !== 1 ? "s" : ""}
@@ -218,7 +216,6 @@ export default function ProfileScreen({
           <span className="text-brand-blue-dark text-xl">›</span>
         </button>
       )}
-
       {/* Products section header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-black uppercase tracking-wider text-foreground/60">
@@ -227,7 +224,6 @@ export default function ProfileScreen({
         <div className="flex items-center gap-2">
           {isGold && (
             <button
-              type="button"
               onClick={boostCredits > 0 ? null : onBuyBoosts}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition ${
                 boostCredits > 0
@@ -251,7 +247,6 @@ export default function ProfileScreen({
 
       {myProducts.length === 0 ? (
         <button
-          type="button"
           onClick={onAdd}
           className="w-full py-14 rounded-3xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center gap-2 text-foreground/50 hover:text-brand-green"
         >
@@ -308,7 +303,6 @@ export default function ProfileScreen({
             </div>
           ))}
           <button
-            type="button"
             onClick={onAdd}
             className="rounded-2xl border-2 border-dashed border-foreground/15 hover:border-brand-green transition flex flex-col items-center justify-center text-foreground/40 hover:text-brand-green"
             style={{ aspectRatio: "3/4" }}
@@ -318,7 +312,6 @@ export default function ProfileScreen({
           </button>
         </div>
       )}
-
       {/* Settings */}
       <div className="mt-8 space-y-2.5">
         <button
