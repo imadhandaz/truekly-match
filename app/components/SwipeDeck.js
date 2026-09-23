@@ -88,13 +88,15 @@ export default function SwipeDeck({
 
   const commit = (choice) => {
     if (isSwipingRef.current) return;
+    isSwipingRef.current = true;
+
     if (outOfSwipes) {
       onUpgrade?.();
       setDrag({ x: 0, y: 0 });
+      isSwipingRef.current = false;
       return;
     }
 
-    isSwipingRef.current = true;
     setDecision(choice);
     onSwipe?.(current, choice);
 
@@ -153,8 +155,8 @@ export default function SwipeDeck({
         >
           ¡Has visto todo!
         </h2>
-        <p className="text-foreground/60 text-base leading-relaxed max-w-xs mb-6">
-          Has explorado todos los productos disponibles. Vuelve mañana o sube algo nuevo para conseguir más matches.
+        <p className="text-foreground/60 text-base leading-relaxed max-w-xs mb-8">
+          Has explorado todos los productos disponibles. Vuelve más tarde o sube algo nuevo.
         </p>
         <div className="flex flex-col gap-2 w-full max-w-xs">
           <div className="px-4 py-3 rounded-2xl bg-foreground/5 border border-foreground/10 text-sm text-foreground/60 font-semibold flex items-center gap-2">
@@ -321,8 +323,8 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
-      {/* Cinematic gradient overlay — stronger at bottom */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 30%, transparent 45%, rgba(0,0,0,0.6) 72%, rgba(0,0,0,0.92) 100%)" }} />
+      {/* Cinematic gradient overlay */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 35%, transparent 50%, rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.95) 100%)" }} />
 
       {/* YES stamp */}
       {depth === 0 && (
@@ -383,16 +385,19 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
-      {/* Category badge — top left */}
-      {item.category && (
-        <div className="absolute top-10 left-4 z-10 flex flex-col items-start gap-1.5">
-          {!item.gold && (
-            <span className="px-3 py-1 rounded-full text-xs font-bold shadow-md" style={{ background: "rgba(255,255,255,0.95)", color: "#0369a1" }}>
-              {item.category}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Category + location */}
+      <div className="absolute top-10 right-4 z-10 flex flex-col items-end gap-1.5">
+        {item.category && (
+          <span className="px-3 py-1 rounded-full text-xs font-bold shadow-md" style={{ background: "rgba(255,255,255,0.95)", color: "#0369a1" }}>
+            {item.category}
+          </span>
+        )}
+        {item.neighborhood && (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.92)" }}>
+            📍 {item.neighborhood}
+          </span>
+        )}
+      </div>
 
       {/* Bottom info */}
       <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -404,6 +409,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
 
         {/* Owner row with avatar */}
         <div className="flex items-center gap-2 mb-3">
+          {/* Owner initial avatar */}
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
             style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)", boxShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
