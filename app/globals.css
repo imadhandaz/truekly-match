@@ -301,3 +301,36 @@ h1, h2, h3 {
 .pb-safe  { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .pt-safe  { padding-top: env(safe-area-inset-top, 0px); }
 .mb-safe  { margin-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── Star bounce utility class ───────────────────────────── */
+.animate-starBounce { animation: starBounce 0.4s ease forwards; }
+
+/* ── Match glow (pulsing green glow ring) ─────────────────── */
+@keyframes matchGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(16,185,129,0.3); }
+  50%       { box-shadow: 0 0 40px rgba(16,185,129,0.6), 0 0 80px rgba(16,185,129,0.2); }
+}
+.animate-match-glow { animation: matchGlow 2s ease-in-out infinite; }
+
+/* ── Confetti float upward ────────────────────────────────── */
+@keyframes confettiFloat {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-120px) rotate(720deg); opacity: 0; }
+}
+
+/* ── Card stack entry ─────────────────────────────────────── */
+@keyframes cardEntry {
+  from { transform: scale(0.92) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+.animate-card-entry { animation: cardEntry 0.4s cubic-bezier(0.32,0.72,0,1) forwards; }
+
+/* ── Pure fade in (no movement) ──────────────────────────── */
+@keyframes fadeInSimple {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fadeInSimple 0.2s ease forwards; }
+
+/* ── Extra typography ─────────────────────────────────────── */
+.text-label-upper { font-size: 0.625rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
