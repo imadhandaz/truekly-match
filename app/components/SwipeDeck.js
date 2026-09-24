@@ -33,6 +33,7 @@ export default function SwipeDeck({
   const [photoIdx, setPhotoIdx] = useState(0);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const [snapBack, setSnapBack] = useState(false);
   const [decision, setDecision] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [matchedProduct, setMatchedProduct] = useState(null);
@@ -68,7 +69,9 @@ export default function SwipeDeck({
       handleTap(e);
       setDrag({ x: 0, y: 0 });
     } else {
+      setSnapBack(true);
       setDrag({ x: 0, y: 0 });
+      setTimeout(() => setSnapBack(false), 500);
     }
   };
 
@@ -184,7 +187,7 @@ export default function SwipeDeck({
           className="absolute inset-0 select-none touch-none cursor-grab active:cursor-grabbing"
           style={{
             transform: exitTransform,
-            transition: dragging ? "none" : "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+            transition: dragging ? "none" : snapBack ? "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
             willChange: "transform",
           }}
         >
@@ -239,9 +242,9 @@ export default function SwipeDeck({
 
 function ActionButton({ children, onClick, label, type, large }) {
   const styles = {
-    no: { bg: "rgba(239,68,68,0.12)", color: "#f87171", border: "2px solid rgba(239,68,68,0.4)", shadow: "0 8px 28px rgba(239,68,68,0.2), 0 2px 8px rgba(0,0,0,0.4)", blur: true },
-    super: { bg: "rgba(14,165,233,0.12)", color: "#38bdf8", border: "2px solid rgba(14,165,233,0.4)", shadow: "0 8px 28px rgba(14,165,233,0.2), 0 2px 8px rgba(0,0,0,0.4)", blur: true },
-    yes: { bg: "linear-gradient(135deg, #10b981, #059669, #0ea5e9)", color: "white", border: "none", shadow: "0 10px 36px rgba(16,185,129,0.5), 0 4px 12px rgba(0,0,0,0.3)", blur: false },
+    no: { bg: "rgba(239,68,68,0.12)", color: "#f87171", border: "1.5px solid rgba(239,68,68,0.3)", shadow: "0 4px 24px rgba(239,68,68,0.15), inset 0 1px 0 rgba(255,255,255,0.08)", blur: true },
+    super: { bg: "rgba(14,165,233,0.12)", color: "#38bdf8", border: "1.5px solid rgba(14,165,233,0.3)", shadow: "0 4px 24px rgba(14,165,233,0.15), inset 0 1px 0 rgba(255,255,255,0.08)", blur: true },
+    yes: { bg: "rgba(16,185,129,0.12)", color: "#34d399", border: "1.5px solid rgba(16,185,129,0.3)", shadow: "0 4px 24px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.08)", blur: true },
   };
   const s = styles[type];
 
@@ -326,6 +329,25 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       {/* Cinematic gradient overlay */}
       <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 35%, transparent 50%, rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.95) 100%)" }} />
 
+      {/* Swipe right overlay — green */}
+      {depth === 0 && (
+        <div style={{
+          position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
+          background: "linear-gradient(135deg, rgba(16,185,129,0.35) 0%, rgba(16,185,129,0.05) 100%)",
+          opacity: yesOpacity,
+          transition: "opacity 0.1s ease",
+        }} />
+      )}
+      {/* Swipe left overlay — red */}
+      {depth === 0 && (
+        <div style={{
+          position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
+          background: "linear-gradient(225deg, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0.05) 100%)",
+          opacity: noOpacity,
+          transition: "opacity 0.1s ease",
+        }} />
+      )}
+
       {/* YES stamp */}
       {depth === 0 && (
         <div
@@ -365,10 +387,11 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           style={{
             top: item.gold ? 56 : 10,
             right: 14,
-            background: "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(14,165,233,0.9))",
+            background: "rgba(0,0,0,0.45)",
             boxShadow: "0 2px 16px rgba(16,185,129,0.55)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.2)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.12)",
           }}
         >
           ⚡ Encaja contigo
@@ -393,7 +416,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           </span>
         )}
         {item.neighborhood && (
-          <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.92)" }}>
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.92)" }}>
             📍 {item.neighborhood}
           </span>
         )}
@@ -469,8 +492,8 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white shrink-0"
               style={{
-                background: "rgba(16,185,129,0.22)",
-                border: "1px solid rgba(16,185,129,0.45)",
+                background: "rgba(0,0,0,0.45)",
+                border: "1px solid rgba(255,255,255,0.12)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
                 boxShadow: "0 2px 10px rgba(16,185,129,0.2)",
