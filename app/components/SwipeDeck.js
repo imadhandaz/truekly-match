@@ -175,7 +175,7 @@ export default function SwipeDeck({
 
   return (
     <>
-      <div className="relative w-full max-w-sm mx-auto" style={{ aspectRatio: "3/4.6" }}>
+      <div className="relative w-full max-w-sm mx-auto" style={{ aspectRatio: "3/4.6", maxHeight: "calc(100dvh - 200px)", minHeight: 360 }}>
         {next2 && <Card item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}
         {next1 && <Card item={next1} depth={1} photoIdx={0} myProducts={myProducts} />}
 
@@ -422,7 +422,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         {/* Título + categoría */}
         <div className="mb-2">
           <div className="flex items-end gap-2">
-            <h3 className="text-2xl font-black text-white leading-tight tracking-tight drop-shadow-lg flex-1 min-w-0">{item.title}</h3>
+            <h3 className="text-2xl font-black text-white leading-tight tracking-tight drop-shadow-lg flex-1 min-w-0 line-clamp-2">{item.title}</h3>
             {item.storage && <span className="text-sm font-light text-white/70 mb-0.5 shrink-0">{item.storage}</span>}
           </div>
           {item.category && (
