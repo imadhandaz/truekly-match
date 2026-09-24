@@ -282,7 +282,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
 
   const compatible = depth === 0 && isCompatible(item.wants, myProducts);
 
-  // Dynamic glow border based on drag direction
   const glowColor = yesOpacity > 0.1
     ? `rgba(16,185,129,${yesOpacity * 0.7})`
     : noOpacity > 0.1
@@ -309,17 +308,18 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         style={{ backgroundImage: `url('${photos[photoIdx]}')`, transition: "background-image 0.3s ease" }}
       />
 
-      {/* Photo indicators */}
+      {/* Indicadores de foto — barra superior estilo Stories */}
       {depth === 0 && photos.length > 1 && (
         <div className="absolute top-3 left-3 right-3 flex gap-1.5 z-20">
           {photos.map((_, i) => (
             <div
               key={i}
-              className="flex-1 rounded-full transition-all duration-200"
+              className="flex-1 rounded-full transition-all duration-300"
               style={{
                 height: 3,
-                background: i === photoIdx ? "white" : "rgba(255,255,255,0.28)",
+                background: i === photoIdx ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.28)",
                 boxShadow: i === photoIdx ? "0 1px 6px rgba(0,0,0,0.5)" : "none",
+                transform: i === photoIdx ? "scaleY(2.5)" : "scaleY(1)",
               }}
             />
           ))}
@@ -408,31 +408,46 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
-      {/* Category + location */}
-      <div className="absolute top-10 right-4 z-10 flex flex-col items-end gap-1.5">
-        {item.category && (
-          <span className="px-3 py-1 rounded-full text-xs font-bold shadow-md" style={{ background: "rgba(255,255,255,0.95)", color: "#0369a1" }}>
-            {item.category}
-          </span>
-        )}
-        {item.neighborhood && (
+      {/* Neighborhood pill — top right */}
+      {item.neighborhood && (
+        <div className="absolute top-10 right-4 z-10">
           <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.92)" }}>
             📍 {item.neighborhood}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Bottom info */}
       <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-        {/* Title row */}
-        <div className="flex items-end gap-2 mb-1">
-          <h3 className="text-[26px] font-black leading-tight drop-shadow-md flex-1 min-w-0">{item.title}</h3>
-          {item.storage && <span className="text-sm font-light text-white/70 mb-0.5 shrink-0">{item.storage}</span>}
+        {/* Título + categoría */}
+        <div className="mb-2">
+          <div className="flex items-end gap-2">
+            <h3 className="text-2xl font-black text-white leading-tight tracking-tight drop-shadow-lg flex-1 min-w-0">{item.title}</h3>
+            {item.storage && <span className="text-sm font-light text-white/70 mb-0.5 shrink-0">{item.storage}</span>}
+          </div>
+          {item.category && (
+            <span
+              className="text-xs font-bold uppercase mt-1 inline-block"
+              style={{ color: "rgba(16,185,129,0.9)", letterSpacing: "0.12em" }}
+            >
+              {item.category}
+            </span>
+          )}
         </div>
+
+        {/* Chip "Busca:" — inline, sobre la fila del dueño */}
+        {item.wants && (
+          <div className="flex items-start gap-1.5 mb-3">
+            <span className="text-xs font-bold shrink-0 mt-0.5" style={{ color: "rgba(16,185,129,0.8)" }}>🔄</span>
+            <p className="text-sm font-semibold leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>
+              <span className="font-bold" style={{ color: "#10b981" }}>Busca: </span>
+              {item.wants.length > 45 ? item.wants.slice(0, 45) + "…" : item.wants}
+            </p>
+          </div>
+        )}
 
         {/* Owner row with avatar */}
         <div className="flex items-center gap-2 mb-3">
-          {/* Owner initial avatar */}
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
             style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)", boxShadow: "0 1px 6px rgba(0,0,0,0.4)" }}
@@ -483,28 +498,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             >
               🔗 Compartir
             </button>
-          </div>
-        )}
-
-        {/* "Busca:" chip pill — compact, always visible */}
-        {item.wants && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white shrink-0"
-              style={{
-                background: "rgba(0,0,0,0.45)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                boxShadow: "0 2px 10px rgba(16,185,129,0.2)",
-              }}
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M7 16l-4-4 4-4M17 8l4 4-4 4M3 12h18"/>
-              </svg>
-              <span style={{ color: "#a7f3d0" }}>Busca:</span>
-              <span className="text-white max-w-[140px] truncate">{item.wants}</span>
-            </div>
           </div>
         )}
 
