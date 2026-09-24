@@ -62,116 +62,134 @@ export default function ProfileScreen({
         </div>
       )}
 
-      <div className="flex items-center gap-5 mb-5">
-        <div className="relative shrink-0">
+      {/* ── Premium profile header ── */}
+      <div style={{
+        background: "linear-gradient(to bottom, rgba(16,185,129,0.08) 0%, transparent 100%)",
+        padding: "24px 20px 20px",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: 20,
+        marginBottom: 16,
+      }}>
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}>
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-2xl animate-pulse-green"
-            style={{ background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)", boxShadow: "0 0 0 0 rgba(16,185,129,0.4), 0 8px 32px rgba(16,185,129,0.3)" }}
+            className="animate-pulse-green"
+            style={{
+              width: 80, height: 80, borderRadius: 40,
+              background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 32, fontWeight: 900, color: "#fff",
+              boxShadow: "0 4px 24px rgba(16,185,129,0.4)",
+            }}
           >
             {initial}
           </div>
           {verified && (
-            <span
-              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full text-white text-sm font-black flex items-center justify-center shadow-lg border-2 border-background"
-              style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}
-            >
-              ✓
-            </span>
+            <div style={{
+              position: "absolute", bottom: 0, right: 0,
+              width: 24, height: 24, borderRadius: 12,
+              background: "#10b981", border: "2px solid #0A0A0C",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12, color: "#fff", fontWeight: 900,
+            }}>✓</div>
           )}
           {isGold && (
-            <span
-              className="absolute -top-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-lg border-2 border-background"
-              style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
-            >
-              ✨
-            </span>
+            <div style={{
+              position: "absolute", top: -2, right: -2,
+              width: 22, height: 22, borderRadius: 11,
+              background: "linear-gradient(135deg, #f59e0b, #d97706)",
+              border: "2px solid #0A0A0C",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10,
+            }}>✨</div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <h2 className="text-2xl font-black truncate">{displayName}</h2>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
+              {displayName}
+            </h2>
             {verified && (
-              <span
-                className="px-2 py-0.5 rounded-full text-white text-[10px] font-black shrink-0"
-                style={{ background: "linear-gradient(135deg, #10b981, #0ea5e9)" }}
-              >
+              <span style={{
+                padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 800, color: "#fff",
+                background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+              }}>
                 VERIFICADO
               </span>
             )}
           </div>
-          <p className="text-sm text-foreground/55 truncate mb-1.5">{subtitle}</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 8px" }}>
+            {subtitle}
+          </p>
           {activityLabel && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold mb-2" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+              background: "rgba(16,185,129,0.1)", color: "#10b981",
+              border: "1px solid rgba(16,185,129,0.2)", marginBottom: 8,
+            }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
               {activityLabel}
             </span>
           )}
+          {user && <br />}
           {user && (
             <button
               type="button"
               onClick={onEditProfile}
-              className="px-3 py-1 rounded-full text-xs font-bold border border-foreground/15 text-foreground/60 hover:border-brand-green hover:text-brand-green transition"
+              style={{
+                padding: "5px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.55)", cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
             >
               Editar perfil
             </button>
           )}
         </div>
-      </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div
-          className="flex flex-col items-center py-3 rounded-2xl relative overflow-hidden"
-          style={{
-            background: tradeCount > 0
-              ? "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(14,165,233,0.1))"
-              : "rgba(0,0,0,0.04)",
-            border: tradeCount > 0 ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(0,0,0,0.06)",
-          }}
-        >
-          <span
-            className="text-2xl font-black leading-none"
-            style={{ color: tradeCount > 0 ? "#10b981" : "var(--foreground)" }}
-          >
-            {tradeCount}
-          </span>
-          <span className="text-[10px] font-bold mt-0.5" style={{ color: tradeCount > 0 ? "#10b981" : "var(--foreground)", opacity: tradeCount > 0 ? 0.85 : 0.45 }}>
-            Trueques ✓
-          </span>
+        <div style={{ display: "flex", gap: 1, borderRadius: 16, overflow: "hidden" }}>
+          {[
+            { value: tradeCount, label: "Trueques", highlight: tradeCount > 0, suffix: tradeCount > 0 ? " ✓" : "" },
+            {
+              value: ratingCount > 0 ? avgRating.toFixed(1) : "—",
+              label: ratingCount > 0 ? `★ ${ratingCount} reseñas` : "Sin reseñas",
+              highlight: false,
+            },
+            { value: matchCount, label: "Matches", highlight: false },
+          ].map(({ value, label, highlight, suffix = "" }) => (
+            <div key={label} style={{
+              flex: 1, padding: "14px 8px", textAlign: "center",
+              background: highlight ? "rgba(16,185,129,0.1)" : "rgba(255,255,255,0.04)",
+              borderTop: highlight ? "2px solid rgba(16,185,129,0.5)" : "2px solid transparent",
+            }}>
+              <div style={{
+                fontSize: 22, fontWeight: 900,
+                color: highlight ? "#10b981" : "rgba(255,255,255,0.9)",
+                lineHeight: 1, marginBottom: 4,
+                textShadow: highlight ? "0 0 12px rgba(16,185,129,0.5)" : "none",
+              }}>
+                {value}{suffix}
+              </div>
+              <div style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+                textTransform: "uppercase", color: "rgba(255,255,255,0.35)",
+              }}>
+                {label}
+              </div>
+            </div>
+          ))}
         </div>
-        <div
-          className="flex flex-col items-center py-3 rounded-2xl"
-          style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)" }}
-        >
-          {ratingCount > 0 ? (
-            <>
-              <span className="text-2xl font-black leading-none" style={{ color: "#f59e0b" }}>
-                {avgRating.toFixed(1)}
-              </span>
-              <span className="text-[10px] font-bold mt-0.5 text-foreground/50">
-                ★ {ratingCount} reseñas
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-xl font-black leading-none text-foreground/25">—</span>
-              <span className="text-[10px] font-bold mt-0.5 text-foreground/40">Sin reseñas</span>
-            </>
-          )}
-        </div>
-        <div
-          className="flex flex-col items-center py-3 rounded-2xl"
-          style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)" }}
-        >
-          <span className="text-2xl font-black leading-none">{matchCount}</span>
-          <span className="text-[10px] font-bold mt-0.5 text-foreground/45">Matches</span>
-        </div>
-      </div>
 
-      {user?.created_at && (
-        <p className="text-[11px] text-foreground/40 font-medium mb-5">
-          Miembro desde {new Date(user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })} · {myProducts.length} producto{myProducts.length !== 1 ? "s" : ""} publicado{myProducts.length !== 1 ? "s" : ""}
-        </p>
-      )}
+        {user?.created_at && (
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 500, margin: "12px 0 0" }}>
+            Miembro desde {new Date(user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
+            {" · "}{myProducts.length} producto{myProducts.length !== 1 ? "s" : ""} publicado{myProducts.length !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
 
       {!user && (
         <button
@@ -208,6 +226,7 @@ export default function ProfileScreen({
           <span className="text-brand-blue-dark text-xl">›</span>
         </button>
       )}
+
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-black uppercase tracking-wider text-foreground/60">
           Mis productos ({myProducts.length})
@@ -306,6 +325,7 @@ export default function ProfileScreen({
           </button>
         </div>
       )}
+
       <div className="mt-8 space-y-2.5">
         <button
           type="button"
