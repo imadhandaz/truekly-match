@@ -445,16 +445,16 @@ function HomeInner() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen pb-24">
+    <div className="flex flex-col flex-1 min-h-screen pb-24" style={{ minHeight: "var(--app-height, 100vh)", overflowX: "hidden" }}>
       <header className="sticky top-0 z-20 w-full px-5 py-4 flex items-center justify-between backdrop-blur-xl bg-background/70 border-b border-foreground/5">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-green to-brand-blue flex items-center justify-center shadow-lg shadow-brand-blue/30">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M5 8h14M15 5l4 3-4 3M19 16H5M9 19l-4-3 4-3" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <div>
-            <h1 className="font-black text-lg leading-none bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent">
+          <div className="min-w-0 overflow-hidden">
+            <h1 className="font-black text-lg leading-none bg-gradient-to-r from-brand-green-dark to-brand-blue-dark bg-clip-text text-transparent truncate">
               Truekly Match
             </h1>
             <p className="text-[11px] leading-none mt-1 uppercase tracking-wider font-bold" style={{ color: "rgba(52,211,153,0.7)" }}>
