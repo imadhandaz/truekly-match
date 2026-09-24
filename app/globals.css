@@ -8,6 +8,11 @@
   --brand-blue: #0ea5e9;
   --brand-blue-dark: #0369a1;
   --background-rgb: 240,253,244;
+  --app-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root { --app-height: 100dvh; }
 }
 
 .dark {
@@ -34,14 +39,16 @@
 
 html {
   background: var(--background);
+  overflow-x: hidden;
 }
 
 body {
   background: transparent;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 h1, h2, h3 {
