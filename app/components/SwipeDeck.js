@@ -142,100 +142,101 @@ export default function SwipeDeck({
       : `rotate(${angle}deg) translate(${drag.x}px, ${drag.y * 0.4}px)`;
 
   if (!current) {
-    return (
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        height: "calc(var(--app-height, 100dvh) - 200px)", gap: 16, padding: "0 32px", textAlign: "center",
-      }}>
-        <div style={{ fontSize: 64, filter: "grayscale(0.3)" }}>🔍</div>
-        <h3 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.01em", margin: 0 }}>
-          Has visto todo por ahora
-        </h3>
-        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, margin: 0 }}>
-          Vuelve mañana o sube un producto para conseguir más matches
-        </p>
-      </div>
-    );
-  }
-
-  return (
+      return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-        <div style={{
+      {/* Card stack — self-contained with buttons overlaid inside */}
+      <div
+        style={{
           position: "relative",
           width: "100%",
           maxWidth: 420,
-          height: "calc(var(--app-height, 100dvh) - 180px)",
+          height: "calc(var(--app-height, 100dvh) - 190px)",
           maxHeight: 680,
-          minHeight: 420,
-        }}>
-          {next2 && <StackCard item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}
-          {next1 && <StackCard item={next1} depth={1} photoIdx={0} myProducts={myProducts} />}
+          minHeight: 460,
+          margin: "0 auto",
+        }}
+      >
+        {next2 && <StackCard item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}
+        {next1 && <StackCard item={next1} depth={1} photoIdx={0} myProducts={myProducts} />}
 
-          <div
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            className="select-none touch-none"
-            style={{
-              position: "absolute", inset: 0,
-              transform: exitTransform,
-              transition: dragging
-                ? "none"
-                : snapBack
-                ? "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)"
-                : "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
-              willChange: "transform",
-              cursor: dragging ? "grabbing" : "grab",
-            }}
-          >
-            <Card
-              item={current}
-              depth={0}
-              yesOpacity={yesOpacity}
-              noOpacity={noOpacity}
-              photoIdx={photoIdx}
-              expanded={expanded}
-              dragging={dragging}
-              dragX={drag.x}
-              myProducts={myProducts}
-            />
-          </div>
+        {/* Draggable current card */}
+        <div
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          className="select-none touch-none"
+          style={{
+            position: "absolute", inset: 0, zIndex: 10,
+            transform: exitTransform,
+            transition: dragging
+              ? "none"
+              : snapBack
+              ? "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)"
+              : "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+            willChange: "transform",
+            cursor: dragging ? "grabbing" : "grab",
+          }}
+        >
+          <Card
+            item={current}
+            depth={0}
+            yesOpacity={yesOpacity}
+            noOpacity={noOpacity}
+            photoIdx={photoIdx}
+            expanded={expanded}
+            dragging={dragging}
+            dragX={drag.x}
+            myProducts={myProducts}
+          />
         </div>
 
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 20, marginTop: 16, marginBottom: 8,
-        }}>
+        {/* Action buttons — overlaid at bottom of card stack, always visible */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 20,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 20,
+          }}
+        >
+          {/* PASO — red, 60px */}
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => commit("no")}
             style={{
               width: 60, height: 60, borderRadius: 30,
-              background: "rgba(239,68,68,0.12)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              border: "1.5px solid rgba(239,68,68,0.35)",
-              boxShadow: "0 4px 20px rgba(239,68,68,0.2)",
+              background: "rgba(239,68,68,0.18)",
+              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+              border: "1.5px solid rgba(239,68,68,0.45)",
+              boxShadow: "0 4px 20px rgba(239,68,68,0.25), 0 0 0 1px rgba(239,68,68,0.1)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 22, cursor: "pointer", color: "#f87171",
               transition: "all 0.2s ease",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 28px rgba(239,68,68,0.35)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(239,68,68,0.2)"; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 28px rgba(239,68,68,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(239,68,68,0.25), 0 0 0 1px rgba(239,68,68,0.1)"; }}
           >
             ✕
           </button>
 
+          {/* SUPER — blue, 52px */}
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => commit("super")}
             style={{
               width: 52, height: 52, borderRadius: 26,
-              background: "rgba(14,165,233,0.12)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              border: "1.5px solid rgba(14,165,233,0.35)",
-              boxShadow: "0 4px 20px rgba(14,165,233,0.2)",
+              background: "rgba(14,165,233,0.18)",
+              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+              border: "1.5px solid rgba(14,165,233,0.45)",
+              boxShadow: "0 4px 20px rgba(14,165,233,0.25), 0 0 0 1px rgba(14,165,233,0.1)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 18, cursor: "pointer", color: "#38bdf8",
               transition: "all 0.2s ease",
@@ -246,21 +247,23 @@ export default function SwipeDeck({
             ⚡
           </button>
 
+          {/* SÍ — green, 68px (el más grande) */}
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => commit("yes")}
             style={{
               width: 68, height: 68, borderRadius: 34,
-              background: "rgba(16,185,129,0.15)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              border: "1.5px solid rgba(16,185,129,0.4)",
-              boxShadow: "0 4px 24px rgba(16,185,129,0.3), 0 0 0 1px rgba(16,185,129,0.1)",
+              background: "rgba(16,185,129,0.2)",
+              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+              border: "1.5px solid rgba(16,185,129,0.5)",
+              boxShadow: "0 4px 24px rgba(16,185,129,0.35), 0 0 0 1px rgba(16,185,129,0.15)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 26, cursor: "pointer", color: "#34d399",
               transition: "all 0.2s ease",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(16,185,129,0.45)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(16,185,129,0.3), 0 0 0 1px rgba(16,185,129,0.1)"; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(16,185,129,0.5)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(16,185,129,0.35), 0 0 0 1px rgba(16,185,129,0.15)"; }}
           >
             ✓
           </button>
