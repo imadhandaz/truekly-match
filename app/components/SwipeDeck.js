@@ -141,8 +141,24 @@ export default function SwipeDeck({
       ? "translate(0, -750px) rotate(0deg) scale(0.5)"
       : `rotate(${angle}deg) translate(${drag.x}px, ${drag.y * 0.4}px)`;
 
-  if (!current) {
-      return (
+    if (!current) {
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        height: "calc(var(--app-height, 100dvh) - 200px)", gap: 16, padding: "0 32px", textAlign: "center",
+      }}>
+        <div style={{ fontSize: 64, filter: "grayscale(0.3)" }}>🔍</div>
+        <h3 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.01em", margin: 0 }}>
+          Has visto todo por ahora
+        </h3>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, margin: 0 }}>
+          Vuelve mañana o sube un producto para conseguir más matches
+        </p>
+      </div>
+    );
+  }
+
+  return (
     <>
       {/* Card stack — self-contained with buttons overlaid inside */}
       <div
