@@ -11,18 +11,18 @@ function Confetti() {
   const [particles, setParticles] = useState([]);
   useEffect(() => {
     setParticles(
-      Array.from({ length: 48 }, (_, i) => ({
+      Array.from({ length: 56 }, (_, i) => ({
         id: i,
         left: Math.random() * 100,
         color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
         size: Math.random() * 8 + 4,
-        delay: Math.random() * 1.5,
-        duration: Math.random() * 2 + 2,
+        delay: Math.random() * 2,
+        duration: Math.random() * 2.5 + 2,
       }))
     );
   }, []);
   return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", borderRadius: 32 }}>
       {particles.map((p) => (
         <div
           key={p.id}
@@ -42,138 +42,184 @@ function Confetti() {
     </div>
   );
 }
+
 export default function MatchModal({ myProduct, theirProduct, onClose, onChat }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 60);
+    const t = setTimeout(() => setVisible(true), 40);
     return () => clearTimeout(t);
   }, []);
 
   return (
+    /* OVERLAY */
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "radial-gradient(ellipse at 50% 30%, rgba(16,185,129,0.18), rgba(0,0,0,0.94) 70%)",
-        backdropFilter: "blur(20px)",
-        padding: "0 16px",
+        background: "rgba(0,0,0,0.88)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        padding: "24px",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.25s ease",
       }}
+      onClick={onClose}
     >
-      <Confetti />
-
+      {/* MODAL CARD */}
       <div
         className="animate-match-pop"
+        onClick={e => e.stopPropagation()}
         style={{
-          background: "linear-gradient(to bottom, rgba(10,20,15,0.98), rgba(10,10,12,0.98))",
-          borderRadius: 28,
-          padding: "32px 24px 28px",
-          border: "1px solid rgba(16,185,129,0.2)",
-          boxShadow: "0 0 60px rgba(16,185,129,0.15), 0 24px 80px rgba(0,0,0,0.6)",
-          maxWidth: 360,
-          width: "100%",
+          width: "100%", maxWidth: 380,
+          background: "linear-gradient(160deg, #0d2a1a 0%, #0A0A0C 60%)",
+          borderRadius: 32,
+          border: "1px solid rgba(16,185,129,0.28)",
+          boxShadow: "0 0 100px rgba(16,185,129,0.14), 0 40px 100px rgba(0,0,0,0.75)",
+          padding: "36px 28px 28px",
           textAlign: "center",
-          opacity: visible ? 1 : 0,
-          transform: visible ? "scale(1)" : "scale(0.85)",
-          transition: "opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Header */}
-        <div style={{ fontSize: 44, marginBottom: 12, lineHeight: 1 }}>🎉</div>
+        <Confetti />
+
+        {/* Radial glow decoration */}
+        <div style={{
+          position: "absolute", top: -70, left: "50%", transform: "translateX(-50%)",
+          width: 240, height: 240, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+
+        {/* Floating emoji */}
+        <div
+          className="animate-float"
+          style={{ fontSize: 54, marginBottom: 14, lineHeight: 1, position: "relative", zIndex: 1 }}
+        >
+          🎉
+        </div>
+
+        {/* Title */}
         <h2 style={{
-          fontSize: 32, fontWeight: 900, letterSpacing: "-0.03em",
-          background: "linear-gradient(135deg, #10b981, #0ea5e9)",
+          fontSize: 36, fontWeight: 900, letterSpacing: "-0.03em",
+          background: "linear-gradient(135deg, #10b981 0%, #38bdf8 100%)",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          marginBottom: 8, marginTop: 0,
+          backgroundClip: "text",
+          margin: "0 0 10px",
+          position: "relative", zIndex: 1,
         }}>
-          ¡Es un Match!
+          ¡Es un Trueque!
         </h2>
+
+        {/* Subtitle */}
         <p style={{
-          fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.5, marginBottom: 24, marginTop: 0,
+          fontSize: 14, color: "rgba(255,255,255,0.42)",
+          marginBottom: 32, marginTop: 0, lineHeight: 1.5,
+          position: "relative", zIndex: 1,
         }}>
           Tú tienes lo que{" "}
-          <strong style={{ color: "rgba(255,255,255,0.85)" }}>{theirProduct.owner}</strong>
-          {" "}busca{" · "}
-          <strong style={{ color: "rgba(255,255,255,0.85)" }}>{theirProduct.owner}</strong>
-          {" "}tiene lo que tú buscas
+          <span style={{ color: "rgba(255,255,255,0.82)", fontWeight: 600 }}>
+            {theirProduct?.owner || "el otro usuario"}
+          </span>{" "}
+          busca, y viceversa
         </p>
-        {/* Product cards */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28, justifyContent: "center" }}>
+
+        {/* Circular product photos */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          marginBottom: 32, position: "relative", zIndex: 1,
+        }}>
           {/* My product */}
-          <div style={{ flex: 1, maxWidth: 120 }}>
-            {myProduct.photos?.[0] ? (
-              <img
-                src={myProduct.photos[0]}
-                alt={myProduct.title}
-                style={{
-                  width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 16,
-                  border: "2px solid rgba(16,185,129,0.4)",
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div style={{
-                width: "100%", aspectRatio: "1", borderRadius: 16,
-                background: "rgba(16,185,129,0.12)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32,
-                border: "2px solid rgba(16,185,129,0.2)",
-              }}>
-                📦
-              </div>
-            )}
-            <p style={{
-              fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 6, marginBottom: 0, fontWeight: 600,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{
+              width: 108, height: 108, borderRadius: "50%",
+              border: "3px solid #10b981",
+              boxShadow: "0 0 28px rgba(16,185,129,0.55), 0 0 56px rgba(16,185,129,0.2)",
+              overflow: "hidden",
+              background: "linear-gradient(135deg, rgba(16,185,129,0.18), rgba(16,185,129,0.04))",
+              flexShrink: 0,
             }}>
-              {myProduct.title || "Tu producto"}
+              {myProduct?.photos?.[0] ? (
+                <img
+                  src={myProduct.photos[0]}
+                  alt={myProduct.title || "Tu producto"}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%", height: "100%",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36,
+                }}>📦</div>
+              )}
+            </div>
+            <p style={{
+              fontSize: 11, fontWeight: 700, color: "#10b981",
+              marginTop: 8, marginBottom: 0,
+              maxWidth: 100, overflow: "hidden",
+              textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {myProduct?.title || "Tu producto"}
             </p>
           </div>
 
-          {/* Divider */}
-          <div style={{ fontSize: 22, color: "#10b981", fontWeight: 900, flexShrink: 0, lineHeight: 1 }}>⇄</div>
+          {/* Swap icon */}
+          <div style={{
+            width: 42, height: 42, borderRadius: "50%", flexShrink: 0,
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 18, color: "rgba(255,255,255,0.55)",
+            margin: "0 -5px", marginBottom: 22,
+            zIndex: 2,
+          }}>⇄</div>
 
           {/* Their product */}
-          <div style={{ flex: 1, maxWidth: 120 }}>
-            {theirProduct.photos?.[0] ? (
-              <img
-                src={theirProduct.photos[0]}
-                alt={theirProduct.title}
-                style={{
-                  width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 16,
-                  border: "2px solid rgba(14,165,233,0.4)",
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div style={{
-                width: "100%", aspectRatio: "1", borderRadius: 16,
-                background: "rgba(14,165,233,0.12)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32,
-                border: "2px solid rgba(14,165,233,0.2)",
-              }}>
-                📦
-              </div>
-            )}
-            <p style={{
-              fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 6, marginBottom: 0, fontWeight: 600,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{
+              width: 108, height: 108, borderRadius: "50%",
+              border: "3px solid #0ea5e9",
+              boxShadow: "0 0 28px rgba(14,165,233,0.55), 0 0 56px rgba(14,165,233,0.2)",
+              overflow: "hidden",
+              background: "linear-gradient(135deg, rgba(14,165,233,0.18), rgba(14,165,233,0.04))",
+              flexShrink: 0,
             }}>
-              {theirProduct.title}
+              {theirProduct?.photos?.[0] ? (
+                <img
+                  src={theirProduct.photos[0]}
+                  alt={theirProduct.title || "Su producto"}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%", height: "100%",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36,
+                }}>📦</div>
+              )}
+            </div>
+            <p style={{
+              fontSize: 11, fontWeight: 700, color: "#38bdf8",
+              marginTop: 8, marginBottom: 0,
+              maxWidth: 100, overflow: "hidden",
+              textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {theirProduct?.title || "Su producto"}
             </p>
           </div>
         </div>
+
         {/* CTAs */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, position: "relative", zIndex: 1 }}>
+          {/* Primary */}
           <button
             type="button"
             onClick={onChat}
             style={{
-              padding: "16px 0", borderRadius: 99, border: "none", cursor: "pointer", width: "100%",
-              background: "linear-gradient(135deg, #10b981, #0ea5e9)",
-              color: "#fff", fontSize: 16, fontWeight: 700,
-              boxShadow: "0 6px 24px rgba(16,185,129,0.4)",
-              transition: "all 0.2s ease",
+              padding: "17px 0", borderRadius: 99, border: "none", cursor: "pointer", width: "100%",
+              background: "linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)",
+              color: "#fff", fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em",
+              boxShadow: "0 6px 28px rgba(16,185,129,0.42)",
+              transition: "all 0.15s ease",
             }}
             onMouseDown={e => { e.currentTarget.style.transform = "scale(0.97)"; }}
             onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -181,20 +227,23 @@ export default function MatchModal({ myProduct, theirProduct, onClose, onChat })
             onTouchStart={e => { e.currentTarget.style.transform = "scale(0.97)"; }}
             onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; }}
           >
-            Enviar mensaje →
+            💬 Enviar mensaje
           </button>
+
+          {/* Secondary */}
           <button
             type="button"
             onClick={onClose}
             style={{
               padding: "14px 0", borderRadius: 99,
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "transparent", color: "rgba(255,255,255,0.4)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.32)",
               fontSize: 14, fontWeight: 500, cursor: "pointer", width: "100%",
               transition: "all 0.15s ease",
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+            onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.65)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.32)"; }}
           >
             Seguir explorando
           </button>
