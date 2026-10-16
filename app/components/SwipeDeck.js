@@ -9,6 +9,7 @@ const MY_PRODUCT = {
   owner: "Tú",
 };
 
+// Returns true if the card's "wants" text overlaps meaningfully with user's product titles
 function isCompatible(wants = "", myProducts = []) {
   if (!wants || !myProducts.length) return false;
   const wl = wants.toLowerCase();
@@ -141,7 +142,7 @@ export default function SwipeDeck({
       ? "translate(0, -750px) rotate(0deg) scale(0.5)"
       : `rotate(${angle}deg) translate(${drag.x}px, ${drag.y * 0.4}px)`;
 
-    if (!current) {
+  if (!current) {
     return (
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -160,65 +161,70 @@ export default function SwipeDeck({
 
   return (
     <>
-      {/* Card stack — self-contained with buttons overlaid inside */}
+      {/* Wrapper — card stack + buttons as siblings */}
       <div
         style={{
           position: "relative",
           width: "100%",
           maxWidth: 420,
-          height: "calc(var(--app-height, 100dvh) - 190px)",
-          maxHeight: 680,
-          minHeight: 460,
           margin: "0 auto",
         }}
       >
-        {next2 && <StackCard item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}
-        {next1 && <StackCard item={next1} depth={1} photoIdx={0} myProducts={myProducts} />}
-
-        {/* Draggable current card */}
+        {/* Card stack — ONLY the cards, no buttons inside */}
         <div
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className="select-none touch-none"
           style={{
-            position: "absolute", inset: 0, zIndex: 10,
-            transform: exitTransform,
-            transition: dragging
-              ? "none"
-              : snapBack
-              ? "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)"
-              : "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
-            willChange: "transform",
-            cursor: dragging ? "grabbing" : "grab",
+            position: "relative",
+            width: "100%",
+            height: "calc(var(--app-height, 100dvh) - 240px)",
+            maxHeight: 600,
+            minHeight: 380,
           }}
         >
-          <Card
-            item={current}
-            depth={0}
-            yesOpacity={yesOpacity}
-            noOpacity={noOpacity}
-            photoIdx={photoIdx}
-            expanded={expanded}
-            dragging={dragging}
-            dragX={drag.x}
-            myProducts={myProducts}
-          />
+          {next2 && <StackCard item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}
+          {next1 && <StackCard item={next1} depth={1} photoIdx={0} myProducts={myProducts} />}
+
+          {/* Draggable current card */}
+          <div
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            className="select-none touch-none"
+            style={{
+              position: "absolute", inset: 0, zIndex: 10,
+              transform: exitTransform,
+              transition: dragging
+                ? "none"
+                : snapBack
+                ? "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)"
+                : "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+              willChange: "transform",
+              cursor: dragging ? "grabbing" : "grab",
+            }}
+          >
+            <Card
+              item={current}
+              depth={0}
+              yesOpacity={yesOpacity}
+              noOpacity={noOpacity}
+              photoIdx={photoIdx}
+              expanded={expanded}
+              dragging={dragging}
+              dragX={drag.x}
+              myProducts={myProducts}
+            />
+          </div>
         </div>
 
-        {/* Action buttons — overlaid at bottom of card stack, always visible */}
+        {/* Action buttons — OUTSIDE card stack, sibling in DOM */}
         <div
           style={{
-            position: "absolute",
-            bottom: 20,
-            left: 0,
-            right: 0,
-            zIndex: 50,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 20,
+            paddingTop: 16,
+            paddingBottom: 8,
           }}
         >
           {/* PASO — red, 60px */}
@@ -228,16 +234,18 @@ export default function SwipeDeck({
             onClick={() => commit("no")}
             style={{
               width: 60, height: 60, borderRadius: 30,
-              background: "rgba(239,68,68,0.18)",
-              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-              border: "1.5px solid rgba(239,68,68,0.45)",
-              boxShadow: "0 4px 20px rgba(239,68,68,0.25), 0 0 0 1px rgba(239,68,68,0.1)",
+              background: "rgba(239,68,68,0.15)",
+              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(239,68,68,0.4)",
+              boxShadow: "0 4px 20px rgba(239,68,68,0.2)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 22, cursor: "pointer", color: "#f87171",
-              transition: "all 0.2s ease",
+              fontSize: 22, cursor: "pointer", color: "#ef4444", fontWeight: 700,
+              transition: "transform 0.15s ease",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 28px rgba(239,68,68,0.4)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(239,68,68,0.25), 0 0 0 1px rgba(239,68,68,0.1)"; }}
+            onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            onTouchStart={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
+            onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
           >
             ✕
           </button>
@@ -249,16 +257,18 @@ export default function SwipeDeck({
             onClick={() => commit("super")}
             style={{
               width: 52, height: 52, borderRadius: 26,
-              background: "rgba(14,165,233,0.18)",
-              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-              border: "1.5px solid rgba(14,165,233,0.45)",
-              boxShadow: "0 4px 20px rgba(14,165,233,0.25), 0 0 0 1px rgba(14,165,233,0.1)",
+              background: "rgba(14,165,233,0.15)",
+              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(14,165,233,0.4)",
+              boxShadow: "0 4px 20px rgba(14,165,233,0.2)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, cursor: "pointer", color: "#38bdf8",
-              transition: "all 0.2s ease",
+              fontSize: 18, cursor: "pointer", color: "#0ea5e9",
+              transition: "transform 0.15s ease",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+            onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            onTouchStart={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
+            onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
           >
             ⚡
           </button>
@@ -270,16 +280,18 @@ export default function SwipeDeck({
             onClick={() => commit("yes")}
             style={{
               width: 68, height: 68, borderRadius: 34,
-              background: "rgba(16,185,129,0.2)",
-              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+              background: "rgba(16,185,129,0.15)",
+              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
               border: "1.5px solid rgba(16,185,129,0.5)",
-              boxShadow: "0 4px 24px rgba(16,185,129,0.35), 0 0 0 1px rgba(16,185,129,0.15)",
+              boxShadow: "0 4px 28px rgba(16,185,129,0.3)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 26, cursor: "pointer", color: "#34d399",
-              transition: "all 0.2s ease",
+              fontSize: 26, cursor: "pointer", color: "#10b981",
+              transition: "transform 0.15s ease",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(16,185,129,0.5)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(16,185,129,0.35), 0 0 0 1px rgba(16,185,129,0.15)"; }}
+            onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            onTouchStart={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
+            onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
           >
             ✓
           </button>
@@ -323,7 +335,14 @@ function StackCard({ item, depth, photoIdx = 0, myProducts = [] }) {
           backgroundImage: `url('${item.photos?.[0] || item.image}')`,
           backgroundSize: "cover", backgroundPosition: "center",
         }} />
-      ) : null}
+      ) : (
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(135deg, rgba(16,185,129,0.1), rgba(14,165,233,0.1))",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 48,
+        }}>📦</div>
+      )}
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
     </div>
   );
@@ -345,16 +364,28 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         : "0 24px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3)",
       transition: dragging ? "box-shadow 0.1s ease" : "box-shadow 0.3s ease",
     }}>
-      {photos[photoIdx] && (
+      {/* Photo or placeholder */}
+      {photos[photoIdx] ? (
         <div style={{
           position: "absolute", inset: 0,
           backgroundImage: `url('${photos[photoIdx]}')`,
           backgroundSize: "cover", backgroundPosition: "center",
         }} />
+      ) : (
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(135deg, rgba(16,185,129,0.1), rgba(14,165,233,0.1))",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 64,
+        }}>📦</div>
       )}
 
+      {/* Story bars */}
       {photos.length > 1 && (
-        <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 4, zIndex: 10 }}>
+        <div style={{
+          position: "absolute", top: 12, left: 12, right: 12,
+          display: "flex", gap: 4, zIndex: 10,
+        }}>
           {photos.map((_, i) => (
             <div key={i} style={{
               flex: 1, height: i === photoIdx ? 3 : 2, borderRadius: 99,
@@ -366,16 +397,19 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
+      {/* Gradient overlay */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.15) 65%, transparent 100%)",
+        background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.75) 30%, rgba(0,0,0,0.15) 65%, transparent 100%)",
       }} />
 
+      {/* Top shadow */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 80,
         background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)",
       }} />
 
+      {/* Swipe right overlay — green */}
       <div style={{
         position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
         background: "linear-gradient(145deg, rgba(16,185,129,0.45) 0%, transparent 70%)",
@@ -388,9 +422,12 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           fontSize: 52,
           opacity: Math.min(Math.max(dragX / 100, 0), 1),
           filter: "drop-shadow(0 0 12px #10b981)",
-        }}>✓</div>
+        }}>
+          ✓
+        </div>
       </div>
 
+      {/* Swipe left overlay — red */}
       <div style={{
         position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
         background: "linear-gradient(215deg, rgba(239,68,68,0.45) 0%, transparent 70%)",
@@ -403,9 +440,12 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           fontSize: 52,
           opacity: Math.min(Math.max(-dragX / 100, 0), 1),
           filter: "drop-shadow(0 0 12px #ef4444)",
-        }}>✕</div>
+        }}>
+          ✕
+        </div>
       </div>
 
+      {/* ⚡ Encaja contigo badge — top left */}
       {compatible && (
         <div className="animate-badge-pop" style={{
           position: "absolute", top: 44, left: 12, zIndex: 10,
@@ -420,6 +460,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
+      {/* Gold badge */}
       {item.gold && (
         <div style={{
           position: "absolute", top: 44, left: compatible ? 130 : 12, zIndex: 10,
@@ -428,9 +469,12 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           background: "linear-gradient(135deg, #f59e0b, #d97706)",
           boxShadow: "0 2px 16px rgba(245,158,11,0.5)",
           fontSize: 11, fontWeight: 800, color: "#fff",
-        }}>✨ GOLD</div>
+        }}>
+          ✨ GOLD
+        </div>
       )}
 
+      {/* Avatar del dueño — top right */}
       <div style={{ position: "absolute", top: 44, right: 12, zIndex: 10 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 18,
@@ -444,8 +488,10 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       </div>
 
+      {/* Bottom info block — buttons are now OUTSIDE, so normal padding */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10 }}>
         <div style={{ padding: "0 20px 20px" }}>
+          {/* Title */}
           <h2 style={{
             fontSize: 26, fontWeight: 900, color: "#fff",
             letterSpacing: "-0.02em", lineHeight: 1.1,
@@ -460,6 +506,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             )}
           </h2>
 
+          {/* Category */}
           {item.category && (
             <div style={{
               fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase",
@@ -469,6 +516,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             </div>
           )}
 
+          {/* Busca */}
           {item.wants && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", flexShrink: 0, marginTop: 1 }}>🔄</span>
@@ -479,6 +527,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             </div>
           )}
 
+          {/* Info row */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {(item.location || item.neighborhood) && (
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", display: "flex", alignItems: "center", gap: 3 }}>
@@ -490,6 +539,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             )}
           </div>
 
+          {/* Expanded details */}
           {expanded && (
             <div className="animate-fade-in" style={{ marginTop: 12 }}>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginBottom: 10, marginTop: 0 }}>
