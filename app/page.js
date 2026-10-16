@@ -556,6 +556,7 @@ function HomeInner() {
             ) : (
               <SwipeDeck
                 items={filteredProducts}
+                userId={user?.id}
                 onMatch={() => {}}
                 onOpenChat={openChatFor}
                 onSwipe={handleSwipe}
