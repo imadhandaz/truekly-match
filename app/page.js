@@ -237,11 +237,14 @@ function HomeInner() {
       }, 2500);
     }
 
-    // Fetch IDs the user already swiped
+    // Fetch IDs the user swiped TODAY — only exclude today's swipes so products
+    // from previous sessions can reappear (prevents permanent disappearance bug)
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
     const { data: swipedRows } = await supabase
       .from("swipes")
       .select("product_id")
-      .eq("swiper_id", userId);
+      .eq("swiper_id", userId)
+      .gte("created_at", today);
     const swipedIds = new Set((swipedRows || []).map((s) => s.product_id));
 
     // Fetch blocked user IDs
@@ -268,7 +271,7 @@ function HomeInner() {
       .neq("owner_id", userId)
       .order("boosted_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(200);
     // Shape + score products for smart swipe ordering
     const shapedProducts = (productsData || [])
       .filter((p) => !swipedIds.has(p.id) && !blockedSet.has(p.owner_id))
