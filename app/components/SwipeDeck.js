@@ -142,19 +142,88 @@ export default function SwipeDeck({
       ? "translate(0, -750px) rotate(0deg) scale(0.5)"
       : `rotate(${angle}deg) translate(${drag.x}px, ${drag.y * 0.4}px)`;
 
+  // Shared action buttons — shown with cards AND in empty state
+  const actionButtons = (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 20,
+        paddingTop: 16,
+        paddingBottom: 8,
+      }}
+    >
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => commit("no")}
+        style={{
+          width: 60, height: 60, borderRadius: 30,
+          background: "rgba(239,68,68,0.15)",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          border: "1.5px solid rgba(239,68,68,0.4)",
+          boxShadow: "0 4px 20px rgba(239,68,68,0.2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 22, cursor: "pointer", color: "#ef4444", fontWeight: 700,
+          transition: "transform 0.15s ease",
+        }}
+      >
+        ✕
+      </button>
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => commit("super")}
+        style={{
+          width: 52, height: 52, borderRadius: 26,
+          background: "rgba(14,165,233,0.15)",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          border: "1.5px solid rgba(14,165,233,0.4)",
+          boxShadow: "0 4px 20px rgba(14,165,233,0.2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 18, cursor: "pointer", color: "#0ea5e9",
+          transition: "transform 0.15s ease",
+        }}
+      >
+        ⚡
+      </button>
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => commit("yes")}
+        style={{
+          width: 68, height: 68, borderRadius: 34,
+          background: "rgba(16,185,129,0.15)",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          border: "1.5px solid rgba(16,185,129,0.5)",
+          boxShadow: "0 4px 28px rgba(16,185,129,0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 26, cursor: "pointer", color: "#10b981",
+          transition: "transform 0.15s ease",
+        }}
+      >
+        ✓
+      </button>
+    </div>
+  );
+
   if (!current) {
     return (
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        height: "calc(var(--app-height, 100dvh) - 200px)", gap: 16, padding: "0 32px", textAlign: "center",
-      }}>
-        <div style={{ fontSize: 64, filter: "grayscale(0.3)" }}>🔍</div>
-        <h3 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.01em", margin: 0 }}>
-          Has visto todo por ahora
-        </h3>
-        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, margin: 0 }}>
-          Vuelve mañana o sube un producto para conseguir más matches
-        </p>
+      <div style={{ width: "100%", maxWidth: 420, margin: "0 auto" }}>
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          minHeight: 340, gap: 16, padding: "0 32px", textAlign: "center",
+        }}>
+          <div style={{ fontSize: 64, filter: "grayscale(0.3)" }}>🔍</div>
+          <h3 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.01em", margin: 0 }}>
+            Has visto todo por ahora
+          </h3>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, margin: 0 }}>
+            Vuelve mañana o sube un producto para conseguir más matches
+          </p>
+        </div>
+        {actionButtons}
       </div>
     );
   }
@@ -217,85 +286,7 @@ export default function SwipeDeck({
         </div>
 
         {/* Action buttons — OUTSIDE card stack, sibling in DOM */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 20,
-            paddingTop: 16,
-            paddingBottom: 8,
-          }}
-        >
-          {/* PASO — red, 60px */}
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => commit("no")}
-            style={{
-              width: 60, height: 60, borderRadius: 30,
-              background: "rgba(239,68,68,0.15)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              border: "1.5px solid rgba(239,68,68,0.4)",
-              boxShadow: "0 4px 20px rgba(239,68,68,0.2)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 22, cursor: "pointer", color: "#ef4444", fontWeight: 700,
-              transition: "transform 0.15s ease",
-            }}
-            onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-            onTouchStart={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
-            onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            ✕
-          </button>
-
-          {/* SUPER — blue, 52px */}
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => commit("super")}
-            style={{
-              width: 52, height: 52, borderRadius: 26,
-              background: "rgba(14,165,233,0.15)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              border: "1.5px solid rgba(14,165,233,0.4)",
-              boxShadow: "0 4px 20px rgba(14,165,233,0.2)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, cursor: "pointer", color: "#0ea5e9",
-              transition: "transform 0.15s ease",
-            }}
-            onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-            onTouchStart={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
-            onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            ⚡
-          </button>
-
-          {/* SÍ — green, 68px (el más grande) */}
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => commit("yes")}
-            style={{
-              width: 68, height: 68, borderRadius: 34,
-              background: "rgba(16,185,129,0.15)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              border: "1.5px solid rgba(16,185,129,0.5)",
-              boxShadow: "0 4px 28px rgba(16,185,129,0.3)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 26, cursor: "pointer", color: "#10b981",
-              transition: "transform 0.15s ease",
-            }}
-            onMouseDown={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-            onTouchStart={(e) => { e.stopPropagation(); e.currentTarget.style.transform = "scale(0.88)"; }}
-            onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            ✓
-          </button>
-        </div>
+        {actionButtons}
       </div>
 
       {matchedProduct && (
@@ -364,7 +355,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         : "0 24px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3)",
       transition: dragging ? "box-shadow 0.1s ease" : "box-shadow 0.3s ease",
     }}>
-      {/* Photo or placeholder */}
       {photos[photoIdx] ? (
         <div style={{
           position: "absolute", inset: 0,
@@ -380,7 +370,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         }}>📦</div>
       )}
 
-      {/* Story bars */}
       {photos.length > 1 && (
         <div style={{
           position: "absolute", top: 12, left: 12, right: 12,
@@ -397,19 +386,16 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
-      {/* Gradient overlay */}
       <div style={{
         position: "absolute", inset: 0,
         background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.75) 30%, rgba(0,0,0,0.15) 65%, transparent 100%)",
       }} />
 
-      {/* Top shadow */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 80,
         background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)",
       }} />
 
-      {/* Swipe right overlay — green */}
       <div style={{
         position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
         background: "linear-gradient(145deg, rgba(16,185,129,0.45) 0%, transparent 70%)",
@@ -422,12 +408,9 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           fontSize: 52,
           opacity: Math.min(Math.max(dragX / 100, 0), 1),
           filter: "drop-shadow(0 0 12px #10b981)",
-        }}>
-          ✓
-        </div>
+        }}>✓</div>
       </div>
 
-      {/* Swipe left overlay — red */}
       <div style={{
         position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
         background: "linear-gradient(215deg, rgba(239,68,68,0.45) 0%, transparent 70%)",
@@ -440,14 +423,11 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
           fontSize: 52,
           opacity: Math.min(Math.max(-dragX / 100, 0), 1),
           filter: "drop-shadow(0 0 12px #ef4444)",
-        }}>
-          ✕
-        </div>
+        }}>✕</div>
       </div>
 
-      {/* ⚡ Encaja contigo badge — top left */}
       {compatible && (
-        <div className="animate-badge-pop" style={{
+        <div style={{
           position: "absolute", top: 44, left: 12, zIndex: 10,
           background: "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(14,165,233,0.2))",
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
@@ -460,7 +440,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
-      {/* Gold badge */}
       {item.gold && (
         <div style={{
           position: "absolute", top: 44, left: compatible ? 130 : 12, zIndex: 10,
@@ -474,7 +453,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       )}
 
-      {/* Avatar del dueño — top right */}
       <div style={{ position: "absolute", top: 44, right: 12, zIndex: 10 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 18,
@@ -488,10 +466,8 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
         </div>
       </div>
 
-      {/* Bottom info block — buttons are now OUTSIDE, so normal padding */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10 }}>
         <div style={{ padding: "0 20px 20px" }}>
-          {/* Title */}
           <h2 style={{
             fontSize: 26, fontWeight: 900, color: "#fff",
             letterSpacing: "-0.02em", lineHeight: 1.1,
@@ -506,7 +482,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             )}
           </h2>
 
-          {/* Category */}
           {item.category && (
             <div style={{
               fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase",
@@ -516,7 +491,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             </div>
           )}
 
-          {/* Busca */}
           {item.wants && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", flexShrink: 0, marginTop: 1 }}>🔄</span>
@@ -527,7 +501,6 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             </div>
           )}
 
-          {/* Info row */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {(item.location || item.neighborhood) && (
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", display: "flex", alignItems: "center", gap: 3 }}>
@@ -539,9 +512,8 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
             )}
           </div>
 
-          {/* Expanded details */}
           {expanded && (
-            <div className="animate-fade-in" style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 12 }}>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginBottom: 10, marginTop: 0 }}>
                 {item.description}
               </p>
