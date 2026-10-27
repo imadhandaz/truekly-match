@@ -496,7 +496,14 @@ function HomeInner() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-5 pt-6 pb-12">
+      <main
+        className="flex-1 flex flex-col items-center px-5 pt-6 pb-12"
+        style={{
+          overflowY: activeTab === 'discover' ? 'hidden' : 'auto',
+          WebkitOverflowScrolling: 'touch',
+          justifyContent: activeTab === 'discover' ? 'center' : 'flex-start',
+        }}
+      >
         {activeTab === "discover" && (
           <>
             <AnnouncementBanner onSlideClick={() => {}} />
