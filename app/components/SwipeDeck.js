@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+const ACTIONS_H = 92; // action buttons row incl. padding
+const NAV_RESERVE = 96; // fixed bottom nav
 import MatchModal from "./MatchModal";
 
 const MY_PRODUCT = {
@@ -29,7 +32,8 @@ export default function SwipeDeck({
   userId,
   myProducts = [],
 }) {
-  const [index, setIndex] = useState(0);
+  // Track swiped ids instead of an index: the parent may also remove swiped items from `items`
+  const [swipedIds, setSwipedIds] = useState(() => new Set());
   const [photoIdx, setPhotoIdx] = useState(0);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -40,9 +44,32 @@ export default function SwipeDeck({
   const startRef = useRef({ x: 0, y: 0, t: 0 });
   const isSwipingRef = useRef(false);
 
-  const current = items[index];
-  const next1 = items[index + 1];
-  const next2 = items[index + 2];
+  const visible = items.filter((i) => !swipedIds.has(i.id));
+  const current = visible[0];
+  const next1 = visible[1];
+  const next2 = visible[2];
+
+  // Size the card area to the space left above the action buttons + bottom nav,
+  // so the buttons stay on screen whatever banners sit above the deck
+  const areaRef = useRef(null);
+  const [availH, setAvailH] = useState(null);
+  useEffect(() => {
+    const measure = () => {
+      const el = areaRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const vh = window.visualViewport?.height || window.innerHeight;
+      setAvailH(Math.round(vh - top - ACTIONS_H - NAV_RESERVE));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro.disconnect();
+    };
+  }, [!!current]);
 
   const onPointerDown = (e) => {
     setDragging(true);
@@ -118,7 +145,7 @@ export default function SwipeDeck({
         }
       }
 
-      setIndex((i) => i + 1);
+      setSwipedIds((s) => new Set(s).add(current.id));
       setPhotoIdx(0);
       setExpanded(false);
       setDrag({ x: 0, y: 0 });
@@ -211,11 +238,14 @@ export default function SwipeDeck({
   if (!current) {
     return (
       <div style={{ width: "100%", maxWidth: 420, margin: "0 auto" }}>
-        <div style={{
+        <div ref={areaRef} style={{
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          minHeight: 340, gap: 16, padding: "0 32px", textAlign: "center",
+          minHeight: availH != null ? Math.max(160, Math.min(340, availH)) : 340,
+          gap: 16, padding: "0 32px", textAlign: "center",
         }}>
-          <div style={{ fontSize: 64, filter: "grayscale(0.3)" }}>🔍</div>
+          {(availH == null || availH >= 240) && (
+            <div style={{ fontSize: 64, filter: "grayscale(0.3)" }}>🔍</div>
+          )}
           <h3 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.01em", margin: 0 }}>
             Has visto todo por ahora
           </h3>
@@ -241,12 +271,13 @@ export default function SwipeDeck({
       >
         {/* Card stack — ONLY the cards, no buttons inside */}
         <div
+          ref={areaRef}
           style={{
             position: "relative",
             width: "100%",
-            height: "calc(var(--app-height, 100dvh) - 430px)",
+            height: availH != null ? availH : "calc(var(--app-height, 100dvh) - 430px)",
             maxHeight: 600,
-            minHeight: 300,
+            minHeight: 240,
           }}
         >
           {next2 && <StackCard item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}

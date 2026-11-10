@@ -554,7 +554,7 @@ function HomeInner() {
                 <span className="text-brand-blue-dark text-xl">›</span>
               </button>
             )}
-            {filterActive && (
+            {(filters.maxKm < 50 || filters.verifiedOnly) && (
               <div className="w-full max-w-sm mb-4 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-between text-xs animate-fadeIn">
                 <span className="font-semibold text-brand-blue-dark">
                   {filters.cats.length > 0
