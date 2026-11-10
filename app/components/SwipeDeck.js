@@ -427,7 +427,7 @@ function Card({ item, depth, yesOpacity = 0, noOpacity = 0, photoIdx = 0, expand
       </div>
 
       {compatible && (
-        <div style={{
+        <div className="animate-badge-pop" style={{
           position: "absolute", top: 44, left: 12, zIndex: 10,
           background: "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(14,165,233,0.2))",
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",

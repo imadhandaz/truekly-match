@@ -194,6 +194,12 @@ export default function WelcomeScreen({ onSignUp, onSignIn }) {
           onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(16,185,129,0.4)"; }}
         >
           <span style={{ position: "relative", zIndex: 1 }}>Empezar gratis →</span>
+          <div style={{
+            position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
+            background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)",
+            animation: "shimmer 3s ease-in-out 1.5s infinite",
+            backgroundSize: "200% 100%",
+          }} />
         </button>
 
         <button

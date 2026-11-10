@@ -8,6 +8,7 @@ const AuthContext = createContext({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }) {
@@ -15,6 +16,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const supabaseRef = useRef(null);
+  const userRef = useRef(null);
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -22,6 +24,7 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     const loadProfile = async (u) => {
+      userRef.current = u;
       if (!u) {
         setProfile(null);
         return;
@@ -59,8 +62,16 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
+  const refreshProfile = async () => {
+    const u = userRef.current;
+    if (!u) return;
+    const supabase = supabaseRef.current || getSupabase();
+    const { data } = await supabase.from("profiles").select("*").eq("id", u.id).maybeSingle();
+    setProfile(data);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

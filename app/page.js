@@ -17,6 +17,7 @@ import AuthModal from "./components/AuthModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
 import MatchModal from "./components/MatchModal";
 import BuyBoostsModal from "./components/BuyBoostsModal";
+import EditProfileModal from "./components/EditProfileModal";
 import WelcomeScreen from "./components/WelcomeScreen";
 import AnnouncementBanner from "./components/AnnouncementBanner";
 import { useAuth } from "./context/AuthContext";
@@ -100,8 +101,9 @@ function HomeInner() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [showBuyBoosts, setShowBuyBoosts] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
-  const { user, profile, signOut, loading: authLoading } = useAuth();
+  const { user, profile, signOut, refreshProfile, loading: authLoading } = useAuth();
   const supabase = getSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -382,7 +384,10 @@ function HomeInner() {
     setMyProducts((p) => p.filter((x) => x.id !== id));
   };
 
-  const openChatFor = (match) => setOpenChat(match);
+  const openChatFor = (match) => {
+    if (!user) { setShowAuth(true); return; }
+    setOpenChat(match);
+  };
 
   const openGold = (reason) => {
     setGoldReason(reason || null);
@@ -558,6 +563,15 @@ function HomeInner() {
                 <span className="font-bold" style={{ color: "#f59e0b" }}>→</span>
               </button>
             )}
+            {fetchError && (
+              <button
+                onClick={() => user ? fetchAll(user.id) : fetchPublicProducts(null)}
+                className="w-full max-w-sm mb-4 p-4 rounded-2xl border border-red-500/20 text-center animate-fadeIn hover:scale-[1.01] transition"
+                style={{ background: "rgba(239,68,68,0.08)" }}
+              >
+                <p className="text-sm font-bold text-red-400">⚠️ {fetchError}</p>
+              </button>
+            )}
             {loadingProducts ? (
               <SkeletonDeck />
             ) : (
@@ -630,6 +644,7 @@ function HomeInner() {
             onSignOut={signOut}
             onSignIn={() => setShowAuth(true)}
             onDeleteAccount={() => setShowDeleteAccount(true)}
+            onEditProfile={() => setShowEditProfile(true)}
             isGold={isGold}
             boostCredits={profile?.boost_credits ?? 0}
           />
@@ -712,6 +727,15 @@ function HomeInner() {
         <BuyBoostsModal
           currentCredits={profile?.boost_credits ?? 0}
           onClose={() => setShowBuyBoosts(false)}
+        />
+      )}
+
+      {showEditProfile && (
+        <EditProfileModal
+          profile={profile}
+          user={user}
+          onClose={() => setShowEditProfile(false)}
+          onSaved={refreshProfile}
         />
       )}
 
