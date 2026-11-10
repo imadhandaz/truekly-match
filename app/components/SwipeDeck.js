@@ -90,7 +90,7 @@ export default function SwipeDeck({
   };
 
   const commit = (choice) => {
-    if (isSwipingRef.current) return;
+    if (!current || isSwipingRef.current) return;
     isSwipingRef.current = true;
 
     if (outOfSwipes) {
@@ -244,9 +244,9 @@ export default function SwipeDeck({
           style={{
             position: "relative",
             width: "100%",
-            height: "calc(var(--app-height, 100dvh) - 240px)",
+            height: "calc(var(--app-height, 100dvh) - 430px)",
             maxHeight: 600,
-            minHeight: 380,
+            minHeight: 300,
           }}
         >
           {next2 && <StackCard item={next2} depth={2} photoIdx={0} myProducts={myProducts} />}

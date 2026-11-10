@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const ALL_CATEGORIES = ["Móvil", "Consola", "Portátil", "Tablet", "Cámara", "Movilidad", "Ropa", "Hogar"];
+export const ALL_CATEGORIES =["Móvil", "Consola", "Portátil", "Tablet", "Cámara", "Movilidad", "Ropa", "Hogar", "Otro"];
 
 export default function FiltersModal({ initial, onClose, onApply }) {
   const [cats, setCats] = useState(initial.cats || []);

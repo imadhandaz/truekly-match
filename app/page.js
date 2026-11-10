@@ -10,7 +10,7 @@ import ChatScreen from "./components/ChatScreen";
 import ChatList from "./components/ChatList";
 import GoldPaywall from "./components/GoldPaywall";
 import LikesYouScreen from "./components/LikesYouScreen";
-import FiltersModal from "./components/FiltersModal";
+import FiltersModal, { ALL_CATEGORIES } from "./components/FiltersModal";
 import VerifyIdentityModal from "./components/VerifyIdentityModal";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthModal from "./components/AuthModal";
@@ -502,16 +502,41 @@ function HomeInner() {
       </header>
 
       <main
-        className="flex-1 flex flex-col items-center px-5 pt-6 pb-12"
+        className="flex-1 flex flex-col items-center px-5 pt-4"
         style={{
-          overflowY: activeTab === 'discover' ? 'hidden' : 'auto',
+          overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
-          justifyContent: activeTab === 'discover' ? 'center' : 'flex-start',
+          justifyContent: 'flex-start',
+          paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))',
         }}
       >
         {activeTab === "discover" && (
           <>
             <AnnouncementBanner onSlideClick={() => {}} />
+            <div className="w-full max-w-sm mb-4 flex gap-2 overflow-x-auto no-scrollbar" style={{ scrollbarWidth: "none" }}>
+              {["Todas", ...ALL_CATEGORIES].map((c) => {
+                const active = c === "Todas" ? filters.cats.length === 0 : filters.cats.includes(c);
+                return (
+                  <button
+                    key={c}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        cats: c === "Todas" ? [] : f.cats.includes(c) ? f.cats.filter((x) => x !== c) : [...f.cats, c],
+                      }))
+                    }
+                    className="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition active:scale-95"
+                    style={
+                      active
+                        ? { background: "linear-gradient(135deg, #10b981, #0ea5e9)", color: "#fff", border: "1px solid transparent" }
+                        : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }
+                    }
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
             {loaded && myProducts.length === 0 && (
               <button
                 onClick={() => setShowUpload(true)}
